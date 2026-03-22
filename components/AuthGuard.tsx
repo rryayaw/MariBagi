@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter, useSegments } from 'expo-router'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '@/context/AuthContext'
 
 export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   const { user, isOnboarded, loading } = useAuth()
@@ -17,17 +17,16 @@ export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
     const inOnboarding = segments[0] === 'onboarding'
 
     // Not logged in -> go to login
-    if (!user) {
-      router.replace('/(auth)/login')
-    } 
+    if (!user && !inAuth) {
+      // Not logged in and not already in auth group → go to role select
+      router.replace('/(auth)')
 
-    // Logged in but data not complete -> go to onboarding
-    else if (user && !isOnboarded && !inOnboarding) {
+    } else if (user && !isOnboarded && !inOnboarding) {
+      // Logged in but not onboarded → go to onboarding
       router.replace('/onboarding')
-    }
-
-    // Fully set up but still on login/onboarding -> go to home
-    else if (user && isOnboarded && (inAuth || inOnboarding)) {
+      
+    } else if (user && isOnboarded && (inAuth || inOnboarding)) {
+      // Fully set up but still on auth/onboarding → go to home
       router.replace('/(tabs)/home')
     }
   }, [user, isOnboarded, loading, segments])

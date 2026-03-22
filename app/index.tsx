@@ -1,21 +1,7 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-import 'react-native-url-polyfill/auto'
+// app/index.tsx
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>This setup took like 3 hours</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+import { Redirect } from 'expo-router'
+
+export default function Index() {
+  return <Redirect href="/(auth)/" />
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
