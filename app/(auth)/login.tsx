@@ -13,13 +13,15 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleLogin = async () => {
-    if (!email || !password) return Alert.alert('Error', 'Please fill in all fields')
+    if (!email || !password) return setError('Mohon isi semua kolom.')
+    setError(null)
     setLoading(true)
     const { error } = await signIn({ email, password })
     setLoading(false)
-    if (error) Alert.alert('Login failed', error.message)
+    if (error) setError('Email atau password salah.')
   }
 
   return (
@@ -27,7 +29,7 @@ export default function LoginScreen() {
       <View className="flex-1 px-6 pt-10 pb-10">
 
         {/* Logo */}
-        <View className="flex-row items-center gap-3 mb-16">
+        <View className="flex-row items-center gap-3 mb-10">
           <Image source={require('@/assets/maribagi-icon.png')} style={{ width: 40, height: 40 }} />
           <Text className="text-lg font-bold text-text-dark">MariBagi</Text>
         </View>
@@ -83,7 +85,7 @@ export default function LoginScreen() {
           activeOpacity={0.8}
           onPress={handleLogin}
           disabled={loading}
-          className="rounded-2xl py-4 items-center mb-4"
+          className="rounded-2xl py-4 items-center mb-3"
           style={{ backgroundColor: Colors.primary }}
         >
           {loading
@@ -92,8 +94,12 @@ export default function LoginScreen() {
           }
         </TouchableOpacity>
 
+        {error && (
+          <Text className="text-red-500 text-xs text-center mb-4">{error}</Text>
+        )}
+
         {/* Divider */}
-        <View className="flex-row items-center gap-3 mb-8">
+        <View className="flex-row items-center gap-3 mb-4">
           <View className="flex-1 h-px bg-text-light opacity-30" />
           <Text className="text-xs text-text-light">atau</Text>
           <View className="flex-1 h-px bg-text-light opacity-30" />
