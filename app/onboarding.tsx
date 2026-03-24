@@ -8,6 +8,7 @@ import { User, MapPin, Camera, Navigation } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
+import * as Crypto from 'expo-crypto'
 
 export default function OnboardingScreen() {
   const { user, role } = useAuth()
@@ -40,37 +41,35 @@ export default function OnboardingScreen() {
   }
 
   // Upload image to Storage
-  const uploadImage = async (uri: string) => {
-    try {
-      setUploading(true)
+ const uploadImage = async (uri: string) => {
+  try {
+    setUploading(true)
 
-      // Expo web returns blob URIs, extract proper extension
-      const ext = uri.startsWith('blob:') ? 'jpg' : uri.split('.').pop() ?? 'jpg'
-      const fileName = `${user?.id}.${ext}`
-      const filePath = `profiles/${fileName}`
+    const ext = uri.startsWith('blob:') ? 'jpg' : (uri.split('.').pop() ?? 'jpg')
+    const newFileName = Crypto.randomUUID()
+    const filePath = `${user?.id}/${newFileName}.${ext}`
 
-      const formData = new FormData()
-      formData.append('file', {
-      uri,
-      name: fileName,
-      type: `image/${ext}`,
-      } as any)
+    const response = await fetch(uri)
+    const blob = await response.blob()
 
-      const { error } = await supabase.storage
+    const { data, error } = await supabase.storage
       .from('avatars')
-      .upload(filePath, formData, { upsert: true, contentType: `image/${ext}` })
+      .upload(filePath, blob, { upsert: true })
 
-      if (error) throw error
-
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
-      setProfilePic(`${data.publicUrl}?t=${Date.now()}`)
-    } catch (e) {
-      console.log('upload error:', e)
-      Alert.alert('Upload failed', 'Could not upload image.')
-    } finally {
-      setUploading(false)
+    if (error) {
+      console.log('storage error:', error)
+      return
     }
+
+    console.log('upload success:', data)
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+    setProfilePic(`${urlData.publicUrl}?t=${Date.now()}`)
+  } catch (e) {
+    console.log('upload error:', e)
+  } finally {
+    setUploading(false)
   }
+}
 
   // Get current location
   const handleGetLocation = async () => {
