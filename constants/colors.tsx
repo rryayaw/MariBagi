@@ -1,6 +1,6 @@
 export const Colors = {
   primary: '#00C4A8',       // slightly muted mint
-  primaryDark: '#009E87',   // darker shade for text links / pressed states
+  primaryDark: '#006657',   // darker shade for text links / pressed states
   orange: '#E07A3A',        // org accent
   bg: '#F5F5F0',            // warm off-white
   white: '#FFFFFF',

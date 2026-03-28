@@ -10,6 +10,9 @@ interface AuthContextType{
     loading: boolean
 }
 
+// if session doesnt exist, user will be null. role and isOnboarded are determined by fetching profile from DB, so they have their own state. loading is true until we know for sure if user is logged in or not, to prevent flickering between screens on app load.
+
+//user will be null if not logged in, otherwise contains user info. role is either 'donor' or 'organization' based on profile. isOnboarded is true if user has completed onboarding. loading is true while we check auth state on app load.
 const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
@@ -18,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true
 })
 
+//Provider component wraps app and makes auth object available to any child component that calls useAuth().
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
@@ -48,6 +52,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Fetch user profile to get role and onboarding status
   const fetchProfile = async (userId: string) => {
     setLoading(true);
     try {
