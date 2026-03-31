@@ -34,7 +34,7 @@ export default function Index() {
         else if (!isOnboarded) router.replace('/onboarding')
         else router.replace('/(tabs)/home')
       })
-    }, 800)
+    }, loading ? 800 : 300)
 
     return () => clearTimeout(timeout)
   }, [loading, user, isOnboarded])

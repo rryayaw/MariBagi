@@ -3,63 +3,19 @@
 import { useState } from 'react'
 import {
   View, Text, ScrollView, TextInput,
-  TouchableOpacity, Image, FlatList
+  TouchableOpacity, Image, ActivityIndicator
 } from 'react-native'
 import { Bell, MapPin, Search, ChevronRight } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
+import { useNeeds } from '@/hooks/useNeeds'
+import { useCategories } from '@/hooks/useCategories'
 import { Colors } from '@/constants/colors'
-import { signOut } from '@/lib/auth'
+import { Need } from '@/types'
 import { useRouter } from 'expo-router'
-//router for redirecting to working home
+//router for redirecting to dummy home
 const router = useRouter()
 
-// DUMMY DATA
-const CATEGORIES = ['Semua', 'Pakaian', 'Buku', 'Makanan', 'Elektronik', 'Lainnya']
-  
-const NEEDS = [
-  {
-    id: '1',
-    title: 'Pakaian Anak',
-    org: 'Panti Asuhan Harapan Baru',
-    description: 'Membutuhkan pakaian anak usia 5–10 tahun, kondisi layak pakai.',
-    urgency: 'urgent',
-    distance: '1.2 km',
-    image: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=200',
-    category: 'Pakaian',
-  },
-  {
-    id: '2',
-    title: 'Buku & Alat Tulis',
-    org: 'Yayasan Cahaya Masa Depan',
-    description: 'Butuh buku pelajaran SD dan alat tulis untuk 30 anak.',
-    urgency: 'normal',
-    distance: '2.8 km',
-    image: 'https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=200',
-    category: 'Buku',
-  },
-  {
-    id: '3',
-    title: 'Bahan Makanan',
-    org: 'Komunitas Peduli Sesama',
-    description: 'Kebutuhan beras, minyak, dan sembako non-perishable untuk 50 keluarga.',
-    urgency: 'normal',
-    distance: '4.5 km',
-    image: 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=200',
-    category: 'Makanan',
-  },
-  {
-    id: '4',
-    title: 'Selimut & Kasur Lipat',
-    org: 'Rumah Singgah Sejahtera',
-    description: 'Dibutuhkan selimut tebal dan kasur lipat untuk 20 penghuni baru.',
-    urgency: 'urgent',
-    distance: '5.1 km',
-    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=200',
-    category: 'Lainnya',
-  },
-]
-
-// urgency badge component for need card
+// ─── Urgency Badge ─────────────────────────────────────────
 const UrgencyBadge = ({ urgency }: { urgency: string }) => {
   const isUrgent = urgency === 'urgent'
   return (
@@ -77,49 +33,62 @@ const UrgencyBadge = ({ urgency }: { urgency: string }) => {
   )
 }
 
-// Need card component
-const NeedCard = ({ item }: { item: typeof NEEDS[0] }) => (
+// ─── Need Card ─────────────────────────────────────────────
+const NeedCard = ({ item }: { item: Need }) => (
   <TouchableOpacity
     activeOpacity={0.85}
     className="bg-white rounded-2xl mb-3 overflow-hidden flex-row"
     style={{ shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 }}
   >
-    <Image
-      source={{ uri: item.image }}
-      style={{ width: 90, height: 110 }}
-      resizeMode="cover"
-    />
+    {item.org.prof_pic ? (
+      <Image
+        source={{ uri: item.org.prof_pic }}
+        style={{ width: 90, height: 110 }}
+        resizeMode="cover"
+      />
+    ) : (
+      <View
+        style={{ width: 90, height: 110, backgroundColor: Colors.donorBg }}
+        className="items-center justify-center"
+      >
+        <Text className="text-2xl">🏢</Text>
+      </View>
+    )}
     <View className="flex-1 p-3 justify-between">
       <View className="flex-row items-center justify-between mb-1">
         <UrgencyBadge urgency={item.urgency} />
-        <Text className="text-xs text-text-muted">{item.distance}</Text>
       </View>
       <Text className="text-base font-bold text-text-dark" numberOfLines={1}>
         {item.title}
       </Text>
       <Text className="text-xs text-text-muted font-medium mb-1" numberOfLines={1}>
-        {item.org}
+        {item.org.full_name}
       </Text>
       <Text className="text-xs text-text-muted leading-snug" numberOfLines={2}>
         {item.description}
+      </Text>
+      <Text className="text-xs mt-1 font-medium" style={{ color: Colors.primary }}>
+        {item.category.name}
       </Text>
     </View>
   </TouchableOpacity>
 )
 
-// main screen
+// ─── Main Screen ───────────────────────────────────────────
 export default function HomeScreen() {
   const { user } = useAuth()
-  const [selectedCategory, setSelectedCategory] = useState('Semua')
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined)
   const [search, setSearch] = useState('')
+
+  const { needs, loading, refetch } = useNeeds(selectedCategory)
+  const { categories } = useCategories()
 
   const fullName = user?.user_metadata?.fullname ?? 'Donatur'
 
-  const filtered = NEEDS.filter(n => {
-    const matchCategory = selectedCategory === 'Semua' || n.category === selectedCategory
-    const matchSearch = n.title.toLowerCase().includes(search.toLowerCase())
-    return matchCategory && matchSearch
-  })
+  const filtered = needs.filter(n =>
+    n.title.toLowerCase().includes(search.toLowerCase()) ||
+    n.org.full_name.toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
     <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingBottom: 100 }}>
@@ -139,7 +108,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Location banner / Temp banner */}
+        {/* Location banner */}
         <TouchableOpacity
           activeOpacity={0.8}
           className="rounded-2xl px-4 py-3 flex-row items-center gap-2 mb-5"
@@ -152,7 +121,8 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         {/* Search */}
-        <View className="bg-white rounded-2xl px-4 flex-row items-center gap-3 mb-5"
+        <View
+          className="bg-white rounded-2xl px-4 flex-row items-center gap-3 mb-5"
           style={{ shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 1 }}
         >
           <Search size={16} color={Colors.textLight} />
@@ -168,12 +138,32 @@ export default function HomeScreen() {
         {/* Categories */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6">
           <View className="flex-row gap-2">
-            {CATEGORIES.map(cat => {
-              const active = selectedCategory === cat
+            {/* All button */}
+            <TouchableOpacity
+              onPress={() => setSelectedCategory(undefined)}
+              activeOpacity={0.8}
+              className="px-4 py-2 rounded-full"
+              style={{
+                backgroundColor: !selectedCategory ? Colors.primary : 'white',
+                borderWidth: 1,
+                borderColor: !selectedCategory ? Colors.primary : '#E5E7EB',
+              }}
+            >
+              <Text
+                className="text-sm font-semibold"
+                style={{ color: !selectedCategory ? 'white' : Colors.textMuted }}
+              >
+                Semua
+              </Text>
+            </TouchableOpacity>
+
+            {/* Dynamic categories from DB */}
+            {categories.map(cat => {
+              const active = selectedCategory === cat.id
               return (
                 <TouchableOpacity
-                  key={cat}
-                  onPress={() => setSelectedCategory(cat)}
+                  key={cat.id}
+                  onPress={() => setSelectedCategory(cat.id)}
                   activeOpacity={0.8}
                   className="px-4 py-2 rounded-full"
                   style={{
@@ -186,7 +176,7 @@ export default function HomeScreen() {
                     className="text-sm font-semibold"
                     style={{ color: active ? 'white' : Colors.textMuted }}
                   >
-                    {cat}
+                    {cat.name}
                   </Text>
                 </TouchableOpacity>
               )
@@ -194,7 +184,7 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
 
-        {/* section header */}
+        {/* Section header */}
         <View className="flex-row items-center justify-between mb-4">
           <Text className="text-lg font-extrabold text-text-dark">Kebutuhan Terdekat</Text>
           <TouchableOpacity className="flex-row items-center gap-1">
@@ -205,31 +195,26 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Need cards*/}
-        {filtered.length > 0
-          ? filtered.map(item => <NeedCard key={item.id} item={item} />)
-          : (
-            <View className="items-center py-10">
-              <Text className="text-text-muted text-sm">Tidak ada kebutuhan ditemukan.</Text>
-            </View>
-          )
-        }
+        {/* Content */}
+        {loading ? (
+          <View className="py-10 items-center">
+            <ActivityIndicator color={Colors.primary} />
+          </View>
+        ) : filtered.length > 0 ? (
+          filtered.map(item => <NeedCard key={item.id} item={item} />)
+        ) : (
+          <View className="items-center py-10">
+            <Text className="text-text-muted text-sm">Tidak ada kebutuhan ditemukan.</Text>
+          </View>
+        )}
 
         <TouchableOpacity
           className="bg-primary py-3 rounded-full items-center justify-center mt-6"
-          onPress={() => router.push('/home_working')}
+          onPress={() => router.push('/home')}
         >
-          <Text className="text-white font-semibold">Working Home</Text>
+          <Text className="text-white font-semibold">Home Dummy</Text>
         </TouchableOpacity>
 
-        <View className="h-4" />
-
-        <TouchableOpacity
-          className="bg-primary py-3 rounded-full items-center justify-center"
-          onPress={signOut}
-        >
-          <Text className="text-white font-semibold">Keluar</Text>
-        </TouchableOpacity>
 
       </View>
     </ScrollView>
