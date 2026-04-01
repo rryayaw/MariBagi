@@ -1,5 +1,16 @@
 //type script defs
 
+export interface Profile {
+  full_name: string
+  prof_pic: string
+  address: string | null
+  avg_rating: number
+  profiles: {
+    phone: string | null
+    role: string
+  }
+}
+
 export interface Need {
   id: string
   title: string

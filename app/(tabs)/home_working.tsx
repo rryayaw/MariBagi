@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router'
 //router for redirecting to dummy home
 const router = useRouter()
 
-// ─── Urgency Badge ─────────────────────────────────────────
+// Urgency Badge
 const UrgencyBadge = ({ urgency }: { urgency: string }) => {
   const isUrgent = urgency === 'urgent'
   return (
@@ -33,7 +33,7 @@ const UrgencyBadge = ({ urgency }: { urgency: string }) => {
   )
 }
 
-// ─── Need Card ─────────────────────────────────────────────
+// Need Card
 const NeedCard = ({ item }: { item: Need }) => (
   <TouchableOpacity
     activeOpacity={0.85}
@@ -74,7 +74,7 @@ const NeedCard = ({ item }: { item: Need }) => (
   </TouchableOpacity>
 )
 
-// ─── Main Screen ───────────────────────────────────────────
+// Main Screen
 export default function HomeScreen() {
   const { user } = useAuth()
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined)
