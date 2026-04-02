@@ -1,54 +1,82 @@
+// app/(tabs)/05-profil.tsx
+
 import { useEffect, useState } from 'react'
-import {
-  View, Text, ScrollView, Image,
-  TouchableOpacity, ActivityIndicator
-} from 'react-native'
+import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
-import { MapPin, Phone, Star, LogOut, Pencil } from 'lucide-react-native'
+import { ChevronRight, Pencil, LogOut, Star, Edit, MapPin, Bell, Shield, HelpCircle  } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { signOut } from '@/lib/auth'
 import { Colors } from '@/constants/colors'
 import { Profile } from '@/types'
+import { Stats } from '@/types'
 
+// helper components
+
+const Divider = () => <View className="h-px bg-neutral-200 mx-4" />
+
+const MenuItem = ({ icon, label, onPress }: { 
+  icon: React.ReactNode
+  label: string
+  onPress: () => void 
+}) => (
+  <TouchableOpacity activeOpacity={0.7} onPress={onPress} className="flex-row items-center px-4 py-4 gap-4">
+    <View className="w-9 h-9 rounded-xl bg-primary/10 items-center justify-center">
+      {icon}
+    </View>
+    <Text className="flex-1 text-sm font-semibold text-text-dark">{label}</Text>
+    <ChevronRight size={16} color={Colors.textLight} />
+  </TouchableOpacity>
+)
+
+// main screen
 
 export default function ProfileScreen() {
   const { user, role } = useAuth()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [stats, setStats] = useState<Stats>({ donations: 0, orgs: 0, rating: 0 })
   const [loading, setLoading] = useState(true)
 
   const isDonor = role === 'donor'
-  const accentColor = isDonor ? Colors.primary : Colors.orange
+  const primaryColor = isDonor ? Colors.primary : Colors.orange
   const table = isDonor ? 'donors' : 'orgs'
 
-  useEffect(() => {
-    fetchProfile()
-  }, [])
+  useEffect(() => { fetchAll() }, [])
 
-  const fetchProfile = async () => {
+  const fetchAll = async () => {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from(table)
-        .select(`
-          full_name,
-          prof_pic,
-          address,
-          avg_rating,
-          profiles (phone, role)
-        `)
+        .select('full_name, prof_pic, address, avg_rating, profiles (phone)')
         .eq('id', user?.id)
         .single()
 
-      if (error) throw error
-      setProfile(data as unknown as Profile)
+      if (data) {
+        setProfile(data as unknown as Profile)
+
+        if (isDonor) {
+          const { count: donationCount } = await supabase
+            .from('donations')
+            .select('*', { count: 'exact', head: true })
+            .eq('donor_id', user?.id)
+
+          const { count: orgCount } = await supabase
+            .from('requests')
+            .select('org_id', { count: 'exact', head: true })
+            .eq('donor_id', user?.id)
+            .eq('status', 'completed')
+
+          setStats({
+            donations: donationCount ?? 0,
+            orgs: orgCount ?? 0,
+            rating: data.avg_rating ?? 0,
+          })
+        }
+      }
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleSignOut = async () => {
-    await signOut()
   }
 
   if (loading) return (
@@ -57,132 +85,137 @@ export default function ProfileScreen() {
     </View>
   )
 
+  const hasActivity = stats.donations > 0 || stats.orgs > 0
+
   return (
     <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingBottom: 100 }}>
 
-      {/* Header band */}
+      {/* hero */}
       <View
-        className="w-full pt-14 pb-20 px-5 items-center"
-        style={{ backgroundColor: accentColor }}
+        className="pt-6 pb-40 px-5"
+        style={{ backgroundColor: primaryColor }}
       >
-        <Text className="text-white font-bold text-lg">Profil</Text>
-      </View>
+        <View className="flex-row items-center gap-4">
 
-      {/* Avatar — overlaps header */}
-      <View className="items-center" style={{ marginTop: -50 }}>
-        <View
-          style={{
-            width: 100, height: 100, borderRadius: 50,
-            overflow: 'hidden', borderWidth: 4, borderColor: Colors.bg,
-            backgroundColor: Colors.donorBg
-          }}
-        >
-          {profile?.prof_pic ? (
-            <Image
-              source={{ uri: profile.prof_pic }}
-              style={{ width: 100, height: 100 }}
-              resizeMode="cover"
-            />
-          ) : (
-            <View className="flex-1 items-center justify-center">
-              <Text style={{ fontSize: 36 }}>👤</Text>
+          {/* Avatar */}
+          <View className="relative">
+            <View className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/40 bg-white/20">
+              {profile?.prof_pic
+                ? <Image source={{ uri: profile.prof_pic }} className="w-20 h-20" resizeMode="cover" />
+                : <View className="flex-1 items-center justify-center"><Text className="text-3xl">👤</Text></View>
+              }
             </View>
-          )}
-        </View>
-
-        {/* Name + role badge */}
-        <Text className="text-xl font-extrabold text-text-dark mt-3">
-          {profile?.full_name}
-        </Text>
-        <View
-          className="px-3 py-1 rounded-full mt-1"
-          style={{ backgroundColor: isDonor ? Colors.donorBg : Colors.orgBg }}
-        >
-          <Text className="text-xs font-bold" style={{ color: accentColor }}>
-            {isDonor ? 'Donatur' : 'Organisasi'}
-          </Text>
-        </View>
-
-        {/* Rating */}
-        <View className="flex-row items-center gap-1 mt-2">
-          <Star size={14} color="#F59E0B" fill="#F59E0B" />
-          <Text className="text-sm font-semibold text-text-dark">
-            {profile?.avg_rating?.toFixed(1) ?? '—'}
-          </Text>
-          <Text className="text-xs text-text-muted">rating</Text>
-        </View>
-      </View>
-
-      {/* Info cards */}
-      <View className="px-5 mt-6 gap-3">
-
-        {profile?.profiles?.phone && (
-          <View
-            className="bg-white rounded-2xl px-4 py-4 flex-row items-center gap-3"
-            style={{ shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 1 }}
-          >
-            <View
-              className="w-9 h-9 rounded-full items-center justify-center"
-              style={{ backgroundColor: isDonor ? Colors.donorBg : Colors.orgBg }}
+            <TouchableOpacity
+              onPress={() => router.push('/edit-profile')}
+              className="absolute bottom-0 right-0 w-7 h-7 rounded-full items-center justify-center"
+              style={{ backgroundColor: Colors.orange }}
             >
-              <Phone size={16} color={accentColor} />
-            </View>
-            <View>
-              <Text className="text-xs text-text-light font-medium">Nomor HP</Text>
-              <Text className="text-sm font-semibold text-text-dark">
-                {profile.profiles.phone}
-              </Text>
+              <Pencil size={12} color="white" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Name + badge */}
+          <View className="flex-1">
+            <Text className="text-xl font-extrabold text-white">{profile?.full_name}</Text>
+            <View className="flex-row items-center gap-2 mt-1">
+              <View className="bg-white/25 px-3 py-1 rounded-full">
+                <Text className="text-white text-xs font-bold">
+                  {isDonor ? 'Donatur' : 'Organisasi'}
+                </Text>
+              </View>
+              {hasActivity && (
+                <View className="flex-row items-center gap-1">
+                  <Star size={12} color="#FCD34D" fill="#FCD34D" />
+                  <Text className="text-white text-xs font-semibold">
+                    {isDonor ? 'Donatur Aktif' : 'Organisasi Aktif'}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
-        )}
-
-        {profile?.address && (
-          <View
-            className="bg-white rounded-2xl px-4 py-4 flex-row items-center gap-3"
-            style={{ shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 1 }}
-          >
-            <View
-              className="w-9 h-9 rounded-full items-center justify-center"
-              style={{ backgroundColor: isDonor ? Colors.donorBg : Colors.orgBg }}
-            >
-              <MapPin size={16} color={accentColor} />
-            </View>
-            <View className="flex-1">
-              <Text className="text-xs text-text-light font-medium">Alamat</Text>
-              <Text className="text-sm font-semibold text-text-dark" numberOfLines={2}>
-                {profile.address}
-              </Text>
-            </View>
-          </View>
-        )}
-
+        </View>
       </View>
 
-      {/* Action buttons */}
-      <View className="px-5 mt-6 gap-3">
+      <View className="px-5">
 
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => router.push('../(edit)/edit-profile')}
-          className="rounded-2xl py-4 flex-row items-center justify-center gap-2"
-          style={{ backgroundColor: accentColor }}
+        {/* stats card - overlaps hero */}
+        <View
+          className="rounded-2xl p-5 flex-row justify-around -mt-36 mb-3 bg-white/30"
+          style={{ shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, elevation: 4 }}
         >
-          <Pencil size={16} color="white" />
-          <Text className="text-white font-bold text-sm">Edit Profil</Text>
-        </TouchableOpacity>
+          {[
+            { emoji: '📦', value: stats.donations, label: 'Donasi' },
+            { emoji: '🏠', value: stats.orgs, label: 'Organisasi' },
+            { emoji: '⭐', value: stats.rating > 0 ? stats.rating.toFixed(1) : '—', label: 'Rating' },
+          ].map((s, i) => (
+            <View key={i} className="items-center flex-1">
+              <Text className="text-2xl mb-1">{s.emoji}</Text>
+              <Text className="text-xl font-extrabold text-white">{s.value}</Text>
+              <Text className="text-xs text-white/80">{s.label}</Text>
+            </View>
+          ))}
+        </View>
 
+        {/* Impact card*/}
+        <View className="bg-white rounded-2xl p-4 flex-row items-center gap-4 mb-6 shadow-sm">
+          <View
+            className="w-11 h-11 rounded-full items-center justify-center"
+            style={{ backgroundColor: isDonor ? Colors.donorBg : Colors.orgBg }}
+          >
+            <Text className="text-xl">{isDonor ? '❤️' : '🤝'}</Text>
+          </View>
+          <View className="flex-1">
+            {hasActivity ? (
+              <>
+                <Text className="text-sm font-bold text-text-dark">Dampak Donasimu</Text>
+                <Text className="text-xs text-text-muted mt-0.5">
+                  Telah membantu melalui{' '}
+                  <Text className="font-bold" style={{ color: primaryColor }}>{stats.donations} donasi</Text>
+                  {' '}ke{' '}
+                  <Text className="font-bold" style={{ color: primaryColor }}>{stats.orgs} organisasi</Text>
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text className="text-sm font-bold text-text-dark">Mulai Berdonasi!</Text>
+                <Text className="text-xs text-text-muted mt-0.5">
+                  Donasikan barang layak pakaimu dan bantu yang membutuhkan.
+                </Text>
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* akun section */}
+        <Text className="text-xs font-bold text-text-light tracking-widest mb-3">AKUN</Text>
+        <View className="bg-white rounded-2xl overflow-hidden shadow-sm mb-5">
+        <MenuItem icon={<Edit size={16} color={Colors.primary} />} label="Edit Profil" onPress={() => router.push('/edit-profile')} />
+        <Divider />
+        <MenuItem icon={<MapPin size={16} color={Colors.primary} />} label="Alamat Saya" onPress={() => {}} />
+        <Divider />
+        <MenuItem icon={<Bell size={16} color={Colors.primary} />} label="Notifikasi" onPress={() => {}} />
+        </View>
+
+        {/* Lainnya section */}
+        <Text className="text-xs font-bold text-text-light tracking-widest mb-3">LAINNYA</Text>
+        <View className="bg-white rounded-2xl overflow-hidden shadow-sm mb-5">
+        <MenuItem icon={<Shield size={16} color={Colors.primary} />} label="Privasi & Keamanan" onPress={() => {}} />
+        <Divider />
+        <MenuItem icon={<HelpCircle size={16} color={Colors.primary} />} label="Bantuan" onPress={() => {}} />
+        </View>
+
+        {/* Sign out */}
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={handleSignOut}
-          className="bg-white rounded-2xl py-4 flex-row items-center justify-center gap-2"
+          onPress={signOut}
+          className="bg-red-100 rounded-2xl py-4 flex-row items-center justify-center gap-2"
           style={{ borderWidth: 1, borderColor: '#FEE2E2' }}
         >
           <LogOut size={16} color="#DC2626" />
-          <Text className="text-sm font-bold" style={{ color: '#DC2626' }}>Keluar</Text>
+          <Text className="text-sm font-bold text-red-600">Keluar</Text>
         </TouchableOpacity>
 
       </View>
-
     </ScrollView>
   )
 }

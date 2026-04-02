@@ -11,6 +11,12 @@ export interface Profile {
   }
 }
 
+export interface Stats { 
+  donations: number 
+  orgs: number
+  rating: number 
+}
+
 export interface Need {
   id: string
   title: string
