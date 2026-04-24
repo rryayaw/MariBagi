@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity,
   ScrollView, ActivityIndicator, Alert
 } from 'react-native'
-import { FileText, Type, AlertCircle, CheckCircle } from 'lucide-react-native'
+import { FileText, Type, CheckCircle } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
 import { useCategories } from '@/hooks/useCategories'
 import { supabase } from '@/lib/supabase'
