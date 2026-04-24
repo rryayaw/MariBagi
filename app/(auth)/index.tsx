@@ -69,7 +69,7 @@ export default function RoleSelectScreen() {
         <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
           <Text className="text-center text-sm text-text-muted">
             Sudah punya akun?{' '}
-            <Text className="text-primary-dark font-bold">Login</Text>
+            <Text className="text-primary font-bold">Login</Text>
           </Text>
         </TouchableOpacity>
 
@@ -77,9 +77,9 @@ export default function RoleSelectScreen() {
         <View className="flex-1 justify-end mt-6">
           <Text className="text-center text-xs text-text-light leading-relaxed">
             Dengan bergabung, kamu menyetujui{' '}
-            <Text className="text-primary-dark font-semibold">Syarat & Ketentuan</Text>
+            <Text className="text-primary font-semibold">Syarat & Ketentuan</Text>
             {' '}dan{' '}
-            <Text className="text-primary-dark font-semibold">Kebijakan Privasi</Text>
+            <Text className="text-primary font-semibold">Kebijakan Privasi</Text>
             {' '}kami.
           </Text>
         </View>

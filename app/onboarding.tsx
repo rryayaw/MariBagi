@@ -11,7 +11,7 @@ import { Colors } from '@/constants/colors'
 import * as Crypto from 'expo-crypto'
 
 export default function OnboardingScreen() {
-  const { user, role } = useAuth()
+  const { user, role, refreshProfile } = useAuth()
   const isDonor = role === 'donor'
   const accentColor = isDonor ? Colors.primary : Colors.orange
 
@@ -106,7 +106,8 @@ export default function OnboardingScreen() {
     })
 
     setLoading(false)
-    if (error) setError(error.message)
+    if (error) return setError(error.message)
+    await refreshProfile()
   }
 
   return (

@@ -8,6 +8,7 @@ interface AuthContextType{
     role: 'donor' | 'organization' | null
     isOnboarded: boolean
     loading: boolean
+    refreshProfile: () => Promise<void>
 }
 
 // if session doesnt exist, user will be null. role and isOnboarded are determined by fetching profile from DB, so they have their own state. loading is true until we know for sure if user is logged in or not, to prevent flickering between screens on app load.
@@ -18,7 +19,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   role: null,
   isOnboarded: false,
-  loading: true
+  loading: true,
+  refreshProfile: async () => {}
 })
 
 //Provider component wraps app and makes auth object available to any child component that calls useAuth().
@@ -74,8 +76,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }
 
+  const refreshProfile = async () => {
+    const currentUser = (await supabase.auth.getUser()).data.user
+    if (currentUser) await fetchProfile(currentUser.id)
+  }
+
     return (
-        <AuthContext.Provider value={{ session, user, role, isOnboarded, loading }}>
+        <AuthContext.Provider value={{ session, user, role, isOnboarded, loading, refreshProfile }}>
             {children}
         </AuthContext.Provider>
     )

@@ -116,7 +116,7 @@ export default function PostDonationScreen() {
     setPickupMethod('pickup')
 
     Alert.alert('Berhasil!', 'Donasi kamu telah dipublikasikan.', [
-      { text: 'OK', onPress: () => router.push('/(tabs)/01-home') }
+      { text: 'OK', onPress: () => router.push('/(tabs)/home') }
     ])
   }
 
