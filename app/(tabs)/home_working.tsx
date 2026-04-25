@@ -8,11 +8,12 @@ import {
 import { Bell, MapPin, Search, ChevronRight } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
 import { useNeeds } from '@/hooks/useNeeds'
+import { useDonations } from '@/hooks/useDonations'
 import { useCategories } from '@/hooks/useCategories'
 import { Colors } from '@/constants/colors'
-import { Need } from '@/types'
+import { Need, Donation } from '@/types'
 import { useRouter } from 'expo-router'
-//router for redirecting to dummy home
+
 const router = useRouter()
 
 // Urgency Badge
@@ -33,7 +34,7 @@ const UrgencyBadge = ({ urgency }: { urgency: string }) => {
   )
 }
 
-// Need Card
+// Need Card (shown to donors)
 const NeedCard = ({ item }: { item: Need }) => (
   <TouchableOpacity
     activeOpacity={0.85}
@@ -74,20 +75,86 @@ const NeedCard = ({ item }: { item: Need }) => (
   </TouchableOpacity>
 )
 
+// Pickup badge helper
+const PickupBadge = ({ method }: { method: string }) => (
+  <View
+    className="px-2 py-0.5 rounded-full"
+    style={{ backgroundColor: method === 'pickup' ? '#EFF6FF' : '#F0FDF4' }}
+  >
+    <Text
+      className="text-xs font-semibold"
+      style={{ color: method === 'pickup' ? '#2563EB' : '#16A34A' }}
+    >
+      {method === 'pickup' ? 'Jemput' : 'Antar'}
+    </Text>
+  </View>
+)
+
+// Donation Card (shown to orgs)
+const DonationCard = ({ item }: { item: Donation }) => (
+  <TouchableOpacity
+    activeOpacity={0.85}
+    className="bg-white rounded-2xl mb-3 overflow-hidden flex-row"
+    style={{ shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 }}
+  >
+    {item.photo_url ? (
+      <Image
+        source={{ uri: item.photo_url }}
+        style={{ width: 90, height: 110 }}
+        resizeMode="cover"
+      />
+    ) : (
+      <View
+        style={{ width: 90, height: 110, backgroundColor: Colors.donorBg }}
+        className="items-center justify-center"
+      >
+        <Text className="text-2xl">🎁</Text>
+      </View>
+    )}
+    <View className="flex-1 p-3 justify-between">
+      <View className="flex-row items-center justify-between mb-1">
+        <PickupBadge method={item.pickup_method} />
+      </View>
+      <Text className="text-base font-bold text-text-dark" numberOfLines={1}>
+        {item.title}
+      </Text>
+      <Text className="text-xs text-text-muted font-medium mb-1" numberOfLines={1}>
+        {item.donor.full_name}
+      </Text>
+      <Text className="text-xs text-text-muted leading-snug" numberOfLines={2}>
+        {item.description}
+      </Text>
+      <Text className="text-xs mt-1 font-medium" style={{ color: Colors.primary }}>
+        {item.category.name}
+      </Text>
+    </View>
+  </TouchableOpacity>
+)
+
 // Main Screen
 export default function HomeScreen() {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined)
   const [search, setSearch] = useState('')
 
-  const { needs, loading, refetch } = useNeeds(selectedCategory)
+  const isOrg = role === 'organization'
+
+  const { needs, loading: needsLoading } = useNeeds(selectedCategory)
+  const { donations, loading: donationsLoading } = useDonations(selectedCategory)
   const { categories } = useCategories()
 
-  const fullName = user?.user_metadata?.fullname ?? 'Donatur'
+  const loading = isOrg ? donationsLoading : needsLoading
 
-  const filtered = needs.filter(n =>
+  const fullName = user?.user_metadata?.fullname ?? (isOrg ? 'Organisasi' : 'Donatur')
+
+  const filteredNeeds = needs.filter(n =>
     n.title.toLowerCase().includes(search.toLowerCase()) ||
     n.org.full_name.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const filteredDonations = donations.filter(d =>
+    d.title.toLowerCase().includes(search.toLowerCase()) ||
+    d.donor.full_name.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -97,7 +164,9 @@ export default function HomeScreen() {
         {/* Header */}
         <View className="flex-row items-start justify-between mb-6">
           <View>
-            <Text className="text-sm text-text-muted">Halo, Donatur! 👋</Text>
+            <Text className="text-sm text-text-muted">
+              {isOrg ? 'Halo, Organisasi! 👋' : 'Halo, Donatur! 👋'}
+            </Text>
             <Text className="text-2xl font-extrabold text-text-dark">{fullName}</Text>
           </View>
           <TouchableOpacity
@@ -128,7 +197,7 @@ export default function HomeScreen() {
           <Search size={16} color={Colors.textLight} />
           <TextInput
             className="flex-1 py-3 text-sm text-text-dark"
-            placeholder="Cari kebutuhan organisasi..."
+            placeholder={isOrg ? 'Cari donasi tersedia...' : 'Cari kebutuhan organisasi...'}
             placeholderTextColor={Colors.textLight}
             value={search}
             onChangeText={setSearch}
@@ -138,7 +207,6 @@ export default function HomeScreen() {
         {/* Categories */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6">
           <View className="flex-row gap-2">
-            {/* All button */}
             <TouchableOpacity
               onPress={() => setSelectedCategory(undefined)}
               activeOpacity={0.8}
@@ -157,7 +225,6 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Dynamic categories from DB */}
             {categories.map(cat => {
               const active = selectedCategory === cat.id
               return (
@@ -186,7 +253,9 @@ export default function HomeScreen() {
 
         {/* Section header */}
         <View className="flex-row items-center justify-between mb-4">
-          <Text className="text-lg font-extrabold text-text-dark">Kebutuhan Terdekat</Text>
+          <Text className="text-lg font-extrabold text-text-dark">
+            {isOrg ? 'Donasi Tersedia' : 'Kebutuhan Terdekat'}
+          </Text>
           <TouchableOpacity className="flex-row items-center gap-1">
             <Text className="text-sm font-semibold" style={{ color: Colors.primary }}>
               Lihat Semua
@@ -200,12 +269,22 @@ export default function HomeScreen() {
           <View className="py-10 items-center">
             <ActivityIndicator color={Colors.primary} />
           </View>
-        ) : filtered.length > 0 ? (
-          filtered.map(item => <NeedCard key={item.id} item={item} />)
+        ) : isOrg ? (
+          filteredDonations.length > 0
+            ? filteredDonations.map(item => <DonationCard key={item.id} item={item} />)
+            : (
+              <View className="items-center py-10">
+                <Text className="text-text-muted text-sm">Tidak ada donasi tersedia.</Text>
+              </View>
+            )
         ) : (
-          <View className="items-center py-10">
-            <Text className="text-text-muted text-sm">Tidak ada kebutuhan ditemukan.</Text>
-          </View>
+          filteredNeeds.length > 0
+            ? filteredNeeds.map(item => <NeedCard key={item.id} item={item} />)
+            : (
+              <View className="items-center py-10">
+                <Text className="text-text-muted text-sm">Tidak ada kebutuhan ditemukan.</Text>
+              </View>
+            )
         )}
 
         <TouchableOpacity
@@ -214,7 +293,6 @@ export default function HomeScreen() {
         >
           <Text className="text-white font-semibold">Home Dummy</Text>
         </TouchableOpacity>
-
 
       </View>
     </ScrollView>

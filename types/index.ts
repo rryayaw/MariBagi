@@ -17,6 +17,26 @@ export interface Stats {
   rating: number 
 }
 
+export interface Donation {
+  id: string
+  title: string
+  description: string
+  photo_url: string | null
+  pickup_method: 'pickup' | 'dropoff'
+  status: 'available' | 'reserved' | 'completed'
+  created_at: string
+  category: {
+    id: string
+    name: string
+  }
+  donor: {
+    id: string
+    full_name: string
+    prof_pic: string
+    address: string | null
+  }
+}
+
 export interface Need {
   id: string
   title: string
