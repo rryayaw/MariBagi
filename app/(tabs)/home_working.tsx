@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   View, Text, ScrollView, TextInput,
-  TouchableOpacity, Image, ActivityIndicator
+  TouchableOpacity, ActivityIndicator,
 } from 'react-native'
 import { Bell, MapPin, Search, ChevronRight } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
@@ -11,125 +11,12 @@ import { useNeeds } from '@/hooks/useNeeds'
 import { useDonations } from '@/hooks/useDonations'
 import { useCategories } from '@/hooks/useCategories'
 import { Colors } from '@/constants/colors'
-import { Need, Donation } from '@/types'
+import { NeedCard } from '@/components/NeedCard'
+import { DonationCard } from '@/components/DonationCard'
+import { CategoryFilter } from '@/components/CategoryFilter'
 import { useRouter } from 'expo-router'
 
 const router = useRouter()
-
-// Urgency Badge
-const UrgencyBadge = ({ urgency }: { urgency: string }) => {
-  const isUrgent = urgency === 'urgent'
-  return (
-    <View
-      className="px-2 py-0.5 rounded-full"
-      style={{ backgroundColor: isUrgent ? '#FEE2E2' : '#F0FDF4' }}
-    >
-      <Text
-        className="text-xs font-semibold"
-        style={{ color: isUrgent ? '#DC2626' : '#16A34A' }}
-      >
-        {isUrgent ? 'Mendesak' : 'Normal'}
-      </Text>
-    </View>
-  )
-}
-
-// Need Card (shown to donors)
-const NeedCard = ({ item }: { item: Need }) => (
-  <TouchableOpacity
-    activeOpacity={0.85}
-    className="bg-white rounded-2xl mb-3 overflow-hidden flex-row"
-    style={{ shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 }}
-  >
-    {item.org.prof_pic ? (
-      <Image
-        source={{ uri: item.org.prof_pic }}
-        style={{ width: 90, height: 110 }}
-        resizeMode="cover"
-      />
-    ) : (
-      <View
-        style={{ width: 90, height: 110, backgroundColor: Colors.donorBg }}
-        className="items-center justify-center"
-      >
-        <Text className="text-2xl">🏢</Text>
-      </View>
-    )}
-    <View className="flex-1 p-3 justify-between">
-      <View className="flex-row items-center justify-between mb-1">
-        <UrgencyBadge urgency={item.urgency} />
-      </View>
-      <Text className="text-base font-bold text-text-dark" numberOfLines={1}>
-        {item.title}
-      </Text>
-      <Text className="text-xs text-text-muted font-medium mb-1" numberOfLines={1}>
-        {item.org.full_name}
-      </Text>
-      <Text className="text-xs text-text-muted leading-snug" numberOfLines={2}>
-        {item.description}
-      </Text>
-      <Text className="text-xs mt-1 font-medium" style={{ color: Colors.primary }}>
-        {item.category.name}
-      </Text>
-    </View>
-  </TouchableOpacity>
-)
-
-// Pickup badge helper
-const PickupBadge = ({ method }: { method: string }) => (
-  <View
-    className="px-2 py-0.5 rounded-full"
-    style={{ backgroundColor: method === 'pickup' ? '#EFF6FF' : '#F0FDF4' }}
-  >
-    <Text
-      className="text-xs font-semibold"
-      style={{ color: method === 'pickup' ? '#2563EB' : '#16A34A' }}
-    >
-      {method === 'pickup' ? 'Jemput' : 'Antar'}
-    </Text>
-  </View>
-)
-
-// Donation Card (shown to orgs)
-const DonationCard = ({ item }: { item: Donation }) => (
-  <TouchableOpacity
-    activeOpacity={0.85}
-    className="bg-white rounded-2xl mb-3 overflow-hidden flex-row"
-    style={{ shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 }}
-  >
-    {item.photo_url ? (
-      <Image
-        source={{ uri: item.photo_url }}
-        style={{ width: 90, height: 110 }}
-        resizeMode="cover"
-      />
-    ) : (
-      <View
-        style={{ width: 90, height: 110, backgroundColor: Colors.donorBg }}
-        className="items-center justify-center"
-      >
-        <Text className="text-2xl">🎁</Text>
-      </View>
-    )}
-    <View className="flex-1 p-3 justify-between">
-      <View className="flex-row items-center justify-between mb-1">
-        <PickupBadge method={item.pickup_method} />
-      </View>
-      <Text className="text-base font-bold text-text-dark" numberOfLines={1}>
-        {item.title}
-      </Text>
-      <Text className="text-xs text-text-muted font-medium mb-1" numberOfLines={1}>
-        {item.donor.full_name}
-      </Text>
-      <Text className="text-xs text-text-muted leading-snug" numberOfLines={2}>
-        {item.description}
-      </Text>
-      <Text className="text-xs mt-1 font-medium" style={{ color: Colors.primary }}>
-        {item.category.name}
-      </Text>
-    </View>
-  </TouchableOpacity>
-)
 
 // Main Screen
 export default function HomeScreen() {
@@ -205,51 +92,11 @@ export default function HomeScreen() {
         </View>
 
         {/* Categories */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6">
-          <View className="flex-row gap-2">
-            <TouchableOpacity
-              onPress={() => setSelectedCategory(undefined)}
-              activeOpacity={0.8}
-              className="px-4 py-2 rounded-full"
-              style={{
-                backgroundColor: !selectedCategory ? Colors.primary : 'white',
-                borderWidth: 1,
-                borderColor: !selectedCategory ? Colors.primary : '#E5E7EB',
-              }}
-            >
-              <Text
-                className="text-sm font-semibold"
-                style={{ color: !selectedCategory ? 'white' : Colors.textMuted }}
-              >
-                Semua
-              </Text>
-            </TouchableOpacity>
-
-            {categories.map(cat => {
-              const active = selectedCategory === cat.id
-              return (
-                <TouchableOpacity
-                  key={cat.id}
-                  onPress={() => setSelectedCategory(cat.id)}
-                  activeOpacity={0.8}
-                  className="px-4 py-2 rounded-full"
-                  style={{
-                    backgroundColor: active ? Colors.primary : 'white',
-                    borderWidth: 1,
-                    borderColor: active ? Colors.primary : '#E5E7EB',
-                  }}
-                >
-                  <Text
-                    className="text-sm font-semibold"
-                    style={{ color: active ? 'white' : Colors.textMuted }}
-                  >
-                    {cat.name}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        </ScrollView>
+        <CategoryFilter
+          categories={categories}
+          selected={selectedCategory}
+          onSelect={setSelectedCategory}
+        />
 
         {/* Section header */}
         <View className="flex-row items-center justify-between mb-4">

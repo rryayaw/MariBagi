@@ -1,42 +1,17 @@
 import { useState } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity,
+  View, Text, TouchableOpacity,
   ScrollView, Image, ActivityIndicator, Alert
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import * as Crypto from 'expo-crypto'
-import { Camera, Tag, FileText, Type, CheckCircle } from 'lucide-react-native'
+import { Camera, FileText, Type, CheckCircle } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
 import { useCategories } from '@/hooks/useCategories'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
 import { useRouter } from 'expo-router'
-
-const InputField = ({
-  label, icon, value, onChangeText, placeholder, multiline = false
-}: {
-  label: string
-  icon: React.ReactNode
-  value: string
-  onChangeText: (t: string) => void
-  placeholder: string
-  multiline?: boolean
-}) => (
-  <View className="mb-5">
-    <Text className="text-xs font-bold text-text-light tracking-widest mb-2">{label}</Text>
-    <View className="bg-white rounded-2xl px-4 flex-row items-center gap-3 shadow-sm">
-      {icon}
-      <TextInput
-        className="flex-1 py-4 text-sm text-text-dark"
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={Colors.textLight}
-        multiline={multiline}
-      />
-    </View>
-  </View>
-)
+import { InputField } from '@/components/InputField'
 
 type PickupMethod = 'pickup' | 'dropoff'
 
