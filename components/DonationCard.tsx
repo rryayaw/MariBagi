@@ -16,9 +16,10 @@ const PickupBadge = ({ method }: { method: string }) => (
   </View>
 )
 
-export const DonationCard = ({ item }: { item: Donation }) => (
+export const DonationCard = ({ item, onPress }: { item: Donation; onPress?: () => void }) => (
   <TouchableOpacity
     activeOpacity={0.85}
+    onPress={onPress}
     className="bg-white rounded-2xl mb-3 overflow-hidden flex-row"
     style={{ shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 }}
   >

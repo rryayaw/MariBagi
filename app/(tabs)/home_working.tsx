@@ -16,10 +16,9 @@ import { DonationCard } from '@/components/DonationCard'
 import { CategoryFilter } from '@/components/CategoryFilter'
 import { useRouter } from 'expo-router'
 
-const router = useRouter()
-
 // Main Screen
 export default function HomeScreen() {
+  const router = useRouter()
   const { user, role } = useAuth()
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined)
   const [search, setSearch] = useState('')
@@ -118,7 +117,16 @@ export default function HomeScreen() {
           </View>
         ) : isOrg ? (
           filteredDonations.length > 0
-            ? filteredDonations.map(item => <DonationCard key={item.id} item={item} />)
+            ? filteredDonations.map(item => (
+              <DonationCard
+                key={item.id}
+                item={item}
+                onPress={() => router.push({
+                  pathname: '/item-detail',
+                  params: { type: 'donation', id: item.id }
+                })}
+              />
+            ))
             : (
               <View className="items-center py-10">
                 <Text className="text-text-muted text-sm">Tidak ada donasi tersedia.</Text>
@@ -126,7 +134,16 @@ export default function HomeScreen() {
             )
         ) : (
           filteredNeeds.length > 0
-            ? filteredNeeds.map(item => <NeedCard key={item.id} item={item} />)
+            ? filteredNeeds.map(item => (
+              <NeedCard
+                key={item.id}
+                item={item}
+                onPress={() => router.push({
+                  pathname: '/item-detail',
+                  params: { type: 'need', id: item.id }
+                })}
+              />
+            ))
             : (
               <View className="items-center py-10">
                 <Text className="text-text-muted text-sm">Tidak ada kebutuhan ditemukan.</Text>

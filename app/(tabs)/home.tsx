@@ -10,8 +10,8 @@ import { useAuth } from '@/context/AuthContext'
 import { Colors } from '@/constants/colors'
 import { signOut } from '@/lib/auth'
 import { useRouter } from 'expo-router'
-//router for redirecting to working home
-const router = useRouter()
+
+// router hook moved inside component
 
 // DUMMY DATA
 const CATEGORIES = ['Semua', 'Pakaian', 'Buku', 'Makanan', 'Elektronik', 'Lainnya']
@@ -78,9 +78,10 @@ const UrgencyBadge = ({ urgency }: { urgency: string }) => {
 }
 
 // Need card component
-const NeedCard = ({ item }: { item: typeof NEEDS[0] }) => (
+const NeedCard = ({ item, onPress }: { item: typeof NEEDS[0]; onPress: () => void }) => (
   <TouchableOpacity
     activeOpacity={0.85}
+    onPress={onPress}
     className="bg-white rounded-2xl mb-3 overflow-hidden flex-row"
     style={{ shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 }}
   >
@@ -109,6 +110,7 @@ const NeedCard = ({ item }: { item: typeof NEEDS[0] }) => (
 
 // main screen
 export default function HomeScreen() {
+  const router = useRouter()
   const { user } = useAuth()
   const [selectedCategory, setSelectedCategory] = useState('Semua')
   const [search, setSearch] = useState('')
@@ -207,7 +209,16 @@ export default function HomeScreen() {
 
         {/* Need cards*/}
         {filtered.length > 0
-          ? filtered.map(item => <NeedCard key={item.id} item={item} />)
+          ? filtered.map(item => (
+            <NeedCard
+              key={item.id}
+              item={item}
+              onPress={() => router.push({
+                pathname: '/item-detail',
+                params: { type: 'need', id: item.id }
+              })}
+            />
+          ))
           : (
             <View className="items-center py-10">
               <Text className="text-text-muted text-sm">Tidak ada kebutuhan ditemukan.</Text>

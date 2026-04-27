@@ -1,7 +1,7 @@
 // app/(tabs)/05-profil.tsx
 
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator, Modal } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Pencil, LogOut, Star, Edit, MapPin, Bell, Shield, HelpCircle } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
@@ -20,6 +20,7 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [stats, setStats] = useState<Stats>({ donations: 0, orgs: 0, rating: 0 })
   const [loading, setLoading] = useState(true)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   const isDonor = role === 'donor'
   const primaryColor = isDonor ? Colors.primary : Colors.orange
@@ -70,14 +71,24 @@ export default function ProfileScreen() {
 
   const hasActivity = stats.donations > 0 || stats.orgs > 0
 
-  return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingBottom: 100 }}>
+  const handleLogout = () => {
+    setShowLogoutModal(true)
+  }
 
-      {/* hero */}
-      <View
-        className="pt-6 pb-40 px-5"
-        style={{ backgroundColor: primaryColor }}
-      >
+  const handleConfirmLogout = () => {
+    setShowLogoutModal(false)
+    signOut()
+  }
+
+  return (
+    <>
+      <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingBottom: 100 }}>
+
+        {/* hero */}
+        <View
+          className="pt-6 pb-40 px-5"
+          style={{ backgroundColor: primaryColor }}
+        >
         <View className="flex-row items-center gap-4">
 
           {/* Avatar */}
@@ -190,7 +201,7 @@ export default function ProfileScreen() {
         {/* Sign out */}
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={signOut}
+          onPress={handleLogout}
           className="bg-red-100 rounded-2xl py-4 flex-row items-center justify-center gap-2"
           style={{ borderWidth: 1, borderColor: '#FEE2E2' }}
         >
@@ -200,5 +211,35 @@ export default function ProfileScreen() {
 
       </View>
     </ScrollView>
+
+    {/* Logout confirmation modal */} 
+    <Modal
+      visible={showLogoutModal}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setShowLogoutModal(false)}
+    >
+      <View className="flex-1 bg-black/40 items-center justify-center">
+        <View className="bg-white rounded-md p-6 w-4/5 items-center">
+          <Text className="text-xl font-bold text-text-dark mb-2">Konfirmasi Keluar</Text>
+          <Text className="text-sm text-text-muted text-center mb-6">Apakah Anda yakin ingin keluar?</Text>
+          <View className="flex-row gap-3 w-full">
+            <TouchableOpacity
+              onPress={() => setShowLogoutModal(false)}
+              className="flex-1 py-3 rounded-2xl items-center border-2 border-text-light"
+            >
+              <Text className="font-semibold text-text-dark">Batal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleConfirmLogout}
+              className="flex-1 py-3 rounded-2xl items-center bg-red-500"
+            >
+              <Text className="font-semibold text-white">Keluar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    </>
   )
 }
