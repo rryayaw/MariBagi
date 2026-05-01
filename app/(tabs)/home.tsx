@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   View, Text, ScrollView, TextInput,
-  TouchableOpacity, Image, FlatList
+  TouchableOpacity, Image
 } from 'react-native'
 import { Bell, MapPin, Search, ChevronRight } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
@@ -213,10 +213,7 @@ export default function HomeScreen() {
             <NeedCard
               key={item.id}
               item={item}
-              onPress={() => router.push({
-                pathname: '/item-detail',
-                params: { type: 'need', id: item.id }
-              })}
+              onPress={() => router.push({ pathname: '/need-detail', params: { id: item.id } })}
             />
           ))
           : (

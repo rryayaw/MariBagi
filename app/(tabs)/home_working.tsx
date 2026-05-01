@@ -121,10 +121,7 @@ export default function HomeScreen() {
               <DonationCard
                 key={item.id}
                 item={item}
-                onPress={() => router.push({
-                  pathname: '/item-detail',
-                  params: { type: 'donation', id: item.id }
-                })}
+                onPress={() => router.push({ pathname: '/donation-detail', params: { id: item.id } })}
               />
             ))
             : (
@@ -138,10 +135,7 @@ export default function HomeScreen() {
               <NeedCard
                 key={item.id}
                 item={item}
-                onPress={() => router.push({
-                  pathname: '/item-detail',
-                  params: { type: 'need', id: item.id }
-                })}
+                onPress={() => router.push({ pathname: '/need-detail', params: { id: item.id } })}
               />
             ))
             : (
