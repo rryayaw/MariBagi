@@ -25,7 +25,6 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: ({ color }) => <Home size={22} color={color} /> }} />
-      <Tabs.Screen name="home_working" options={{ href: null }} />
       <Tabs.Screen
         name="donation"
         options={{
