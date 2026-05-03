@@ -29,12 +29,12 @@ export const NeedCard = ({ item, onPress }: { item: Need; onPress?: () => void }
     {item.org.prof_pic ? (
       <Image
         source={{ uri: item.org.prof_pic }}
-        style={{ width: 90, height: 110 }}
+        style={{ width: 90, alignSelf: 'stretch' }}
         resizeMode="cover"
       />
     ) : (
       <View
-        style={{ width: 90, height: 110, backgroundColor: Colors.donorBg }}
+        style={{ width: 90, backgroundColor: Colors.donorBg }}
         className="items-center justify-center"
       >
         <Text className="text-2xl">🏢</Text>

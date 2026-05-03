@@ -26,12 +26,12 @@ export const DonationCard = ({ item, onPress }: { item: Donation; onPress?: () =
     {item.photo_url ? (
       <Image
         source={{ uri: item.photo_url }}
-        style={{ width: 90, height: 110 }}
+        style={{ width: 90, alignSelf: 'stretch' }}
         resizeMode="cover"
       />
     ) : (
       <View
-        style={{ width: 90, height: 110, backgroundColor: Colors.donorBg }}
+        style={{ width: 90, backgroundColor: Colors.donorBg }}
         className="items-center justify-center"
       >
         <Text className="text-2xl">🎁</Text>
