@@ -32,6 +32,8 @@ export default function StatusScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [tab, setTab] = useState<TabType>('all')
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
+  const [tolakConfirm, setTolakConfirm] = useState<string | null>(null)
+  const [terimaConfirm, setTerimaConfirm] = useState<string | null>(null)
 
   const isOrg = role === 'organization'
   const accentColor = isOrg ? Colors.orange : Colors.primary
@@ -78,11 +80,17 @@ export default function StatusScreen() {
   const isIncoming = (r: Request) =>
     isOrg ? r.initiated === 'donor' : r.initiated === 'org'
 
-  const filtered = requests.filter(r => {
-    if (tab === 'all') return true
-    if (tab === 'incoming') return isIncoming(r)
-    return !isIncoming(r)
-  })
+  const filtered = requests
+    .filter(r => {
+      if (tab === 'all') return true
+      if (tab === 'incoming') return isIncoming(r)
+      return !isIncoming(r)
+    })
+    .sort((a, b) => {
+      const aCancelled = a.status === 'cancelled' ? 1 : 0
+      const bCancelled = b.status === 'cancelled' ? 1 : 0
+      return aCancelled - bCancelled
+    })
 
   const tabs: { key: TabType; label: string }[] = [
     { key: 'all', label: 'Semua' },
@@ -205,12 +213,7 @@ export default function StatusScreen() {
                       activeOpacity={0.8}
                       className="flex-1 py-3 rounded-xl items-center"
                       style={{ backgroundColor: '#FEE2E2' }}
-                      onPress={() =>
-                        Alert.alert('Tolak Permintaan', 'Yakin ingin menolak permintaan ini?', [
-                          { text: 'Batal', style: 'cancel' },
-                          { text: 'Tolak', style: 'destructive', onPress: () => updateStatus(r.id, 'cancelled') },
-                        ])
-                      }
+                      onPress={() => setTolakConfirm(r.id)}
                     >
                       <Text className="font-bold text-sm" style={{ color: '#DC2626' }}>Tolak</Text>
                     </TouchableOpacity>
@@ -218,12 +221,7 @@ export default function StatusScreen() {
                       activeOpacity={0.8}
                       className="flex-1 py-3 rounded-xl items-center"
                       style={{ backgroundColor: '#D1FAE5' }}
-                      onPress={() =>
-                        Alert.alert('Terima Permintaan', 'Yakin ingin menerima permintaan ini?', [
-                          { text: 'Batal', style: 'cancel' },
-                          { text: 'Terima', onPress: () => updateStatus(r.id, 'reserved') },
-                        ])
-                      }
+                      onPress={() => setTerimaConfirm(r.id)}
                     >
                       <Text className="font-bold text-sm" style={{ color: '#059669' }}>Terima</Text>
                     </TouchableOpacity>
@@ -275,6 +273,62 @@ export default function StatusScreen() {
               style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#DC2626' }}
             >
               <Text style={{ fontWeight: '700', color: 'white' }}>Batalkan</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+
+    {/* Tolak confirm modal */}
+    <Modal visible={!!tolakConfirm} transparent animationType="fade" onRequestClose={() => setTolakConfirm(null)}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+        <View style={{ backgroundColor: 'white', borderRadius: 24, padding: 24, width: '100%' }}>
+          <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.textDark, marginBottom: 8 }}>Tolak Permintaan?</Text>
+          <Text style={{ fontSize: 14, color: Colors.textMuted, lineHeight: 20, marginBottom: 24 }}>
+            Permintaan ini akan ditolak dan tidak bisa dikembalikan.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setTolakConfirm(null)}
+              style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#F3F4F6' }}
+            >
+              <Text style={{ fontWeight: '700', color: Colors.textMuted }}>Batal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => { if (tolakConfirm) updateStatus(tolakConfirm, 'cancelled'); setTolakConfirm(null) }}
+              style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#DC2626' }}
+            >
+              <Text style={{ fontWeight: '700', color: 'white' }}>Tolak</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+
+    {/* Terima confirm modal */}
+    <Modal visible={!!terimaConfirm} transparent animationType="fade" onRequestClose={() => setTerimaConfirm(null)}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+        <View style={{ backgroundColor: 'white', borderRadius: 24, padding: 24, width: '100%' }}>
+          <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.textDark, marginBottom: 8 }}>Terima Permintaan?</Text>
+          <Text style={{ fontSize: 14, color: Colors.textMuted, lineHeight: 20, marginBottom: 24 }}>
+            Kamu akan menerima permintaan donasi ini.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setTerimaConfirm(null)}
+              style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#F3F4F6' }}
+            >
+              <Text style={{ fontWeight: '700', color: Colors.textMuted }}>Batal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => { if (terimaConfirm) updateStatus(terimaConfirm, 'reserved'); setTerimaConfirm(null) }}
+              style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#059669' }}
+            >
+              <Text style={{ fontWeight: '700', color: 'white' }}>Terima</Text>
             </TouchableOpacity>
           </View>
         </View>

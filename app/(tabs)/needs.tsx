@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity,
+  View, Text, TouchableOpacity,
   ScrollView, ActivityIndicator, Alert
 } from 'react-native'
 import { FileText, Type, CheckCircle } from 'lucide-react-native'
@@ -9,39 +9,18 @@ import { useCategories } from '@/hooks/useCategories'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
 import { useRouter } from 'expo-router'
-
-const InputField = ({
-  label, icon, value, onChangeText, placeholder, multiline = false
-}: {
-  label: string
-  icon: React.ReactNode
-  value: string
-  onChangeText: (t: string) => void
-  placeholder: string
-  multiline?: boolean
-}) => (
-  <View className="mb-5">
-    <Text className="text-xs font-bold text-text-light tracking-widest mb-2">{label}</Text>
-    <View className="bg-white rounded-2xl px-4 flex-row items-center gap-3 shadow-sm">
-      {icon}
-      <TextInput
-        className="flex-1 py-4 text-sm text-text-dark"
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={Colors.textLight}
-        multiline={multiline}
-      />
-    </View>
-  </View>
-)
+import { InputField } from '@/components/InputField'
+import { MyNeedsTab } from '@/components/MyNeedsTab'
 
 type Urgency = 'normal' | 'urgent'
+type ActiveTab = 'create' | 'my'
 
 export default function PostNeedScreen() {
   const { user } = useAuth()
   const router = useRouter()
   const { categories } = useCategories()
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>('create')
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -80,14 +59,36 @@ export default function PostNeedScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingBottom: 100 }}>
+    <View className="flex-1 bg-bg">
 
-      {/* header */}
-      <View className="pt-14 pb-6 px-5" style={{ backgroundColor: Colors.orange }}>
-        <Text className="text-lg font-extrabold text-white">Buat Kebutuhan</Text>
-        <Text className="text-xs text-white/70 mt-1">Beritahu donatur apa yang kamu butuhkan</Text>
+      {/* Header + tab switcher */}
+      <View className="pt-14 pb-4 px-5" style={{ backgroundColor: Colors.orange }}>
+        <Text className="text-lg font-extrabold text-white">
+          {activeTab === 'create' ? 'Buat Kebutuhan' : 'Kebutuhanmu'}
+        </Text>
+        <Text className="text-xs text-white/70 mt-1 mb-4">
+          {activeTab === 'create' ? 'Beritahu donatur apa yang kamu butuhkan' : 'Kelola kebutuhan yang kamu buat'}
+        </Text>
+        <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, padding: 3 }}>
+          {(['create', 'my'] as ActiveTab[]).map(t => (
+            <TouchableOpacity
+              key={t}
+              activeOpacity={0.8}
+              onPress={() => setActiveTab(t)}
+              style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: activeTab === t ? 'white' : 'transparent' }}
+            >
+              <Text style={{ fontWeight: '700', fontSize: 13, color: activeTab === t ? Colors.orange : 'white' }}>
+                {t === 'create' ? 'Buat' : 'Kebutuhanmu'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
+      {activeTab === 'my' && <MyNeedsTab />}
+
+      {activeTab === 'create' && (
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
       <View className="px-5 pt-6">
 
         <InputField
@@ -194,6 +195,9 @@ export default function PostNeedScreen() {
         </TouchableOpacity>
 
       </View>
-    </ScrollView>
+      </ScrollView>
+      )}
+
+    </View>
   )
 }
