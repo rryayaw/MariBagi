@@ -81,6 +81,23 @@ export interface DonationDetail {
   }
 }
 
+export interface Request {
+  id: string
+  donation_id: string
+  need_id: string
+  donor_id: string
+  org_id: string
+  initiated: 'org' | 'donor'
+  status: 'available' | 'reserved' | 'completed' | 'cancelled'
+  offer_title: string | null
+  offer_description: string | null
+  created_at: string
+  donation: { id: string; title: string; photo_url: string | null; category: { name: string } }
+  need: { id: string; title: string; category: { name: string } }
+  donor: { id: string; full_name: string; prof_pic: string }
+  org: { id: string; full_name: string; prof_pic: string }
+}
+
 export interface NeedDetail {
   id: string
   org_id: string
