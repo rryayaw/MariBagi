@@ -31,6 +31,7 @@ export default function DonationDetailScreen() {
   const [myNeeds, setMyNeeds] = useState<MyNeed[]>([])
   const [pickerLoading, setPickerLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [myRequestStatus, setMyRequestStatus] = useState<'available' | 'reserved' | null>(null)
 
   const isOrg = role === 'organization'
 
@@ -68,6 +69,18 @@ export default function DonationDetailScreen() {
         .select('*', { count: 'exact', head: true })
         .eq('rated_entity', data.donor_id)
       setRatingCount(count ?? 0)
+
+      if (user) {
+        const { data: req } = await supabase
+          .from('requests')
+          .select('status')
+          .eq('org_id', user.id)
+          .eq('donation_id', id)
+          .neq('status', 'cancelled')
+          .limit(1)
+          .maybeSingle()
+        if (req) setMyRequestStatus(req.status as 'available' | 'reserved')
+      }
     } catch (err) {
       setError(String(err))
     } finally {
@@ -246,26 +259,51 @@ export default function DonationDetailScreen() {
               <Text className="text-white font-bold text-base">Kelola Post</Text>
             </TouchableOpacity>
           ) : isOrg ? (
-            <View className="flex-row gap-3">
-              <TouchableOpacity
-                activeOpacity={0.8}
-                className="flex-1 flex-row items-center justify-center gap-2 border-2 rounded-2xl py-4"
-                style={{ borderColor: Colors.textMuted }}
-                onPress={() => Alert.alert('Info', 'Fitur chat belum tersedia')}
-              >
-                <MessageCircle size={18} color={Colors.textMuted} />
-                <Text className="text-base font-bold text-text-muted">Chat</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl py-4"
-                style={{ backgroundColor: Colors.primary }}
-                onPress={openNeedPicker}
-              >
-                <Heart size={18} color="white" fill="white" />
-                <Text className="text-base font-bold text-white">Minta Donasi</Text>
-              </TouchableOpacity>
-            </View>
+            item.status === 'reserved' || item.status === 'completed' ? (
+              <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: '#F3F4F6' }}>
+                <Text className="text-base font-bold text-text-muted">Sudah Dipesan</Text>
+              </View>
+            ) : myRequestStatus === 'reserved' ? (
+              <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: '#D1FAE5' }}>
+                <Text className="text-base font-bold" style={{ color: '#059669' }}>Permintaanmu Diterima ✓</Text>
+              </View>
+            ) : myRequestStatus === 'available' ? (
+              <View>
+                <View className="rounded-2xl py-4 items-center mb-3" style={{ backgroundColor: '#FEF3C7' }}>
+                  <Text className="text-base font-bold" style={{ color: '#D97706' }}>Menunggu Konfirmasi...</Text>
+                </View>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  className="flex-row items-center justify-center gap-2 border-2 rounded-2xl py-3"
+                  style={{ borderColor: Colors.textMuted }}
+                  onPress={() => Alert.alert('Info', 'Fitur chat belum tersedia')}
+                >
+                  <MessageCircle size={16} color={Colors.textMuted} />
+                  <Text className="text-sm font-bold text-text-muted">Hubungi Donatur</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className="flex-row gap-3">
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  className="flex-1 flex-row items-center justify-center gap-2 border-2 rounded-2xl py-4"
+                  style={{ borderColor: Colors.textMuted }}
+                  onPress={() => Alert.alert('Info', 'Fitur chat belum tersedia')}
+                >
+                  <MessageCircle size={18} color={Colors.textMuted} />
+                  <Text className="text-base font-bold text-text-muted">Chat</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl py-4"
+                  style={{ backgroundColor: Colors.primary }}
+                  onPress={openNeedPicker}
+                >
+                  <Heart size={18} color="white" fill="white" />
+                  <Text className="text-base font-bold text-white">Minta Donasi</Text>
+                </TouchableOpacity>
+              </View>
+            )
           ) : null}
         </View>
       </ScrollView>
