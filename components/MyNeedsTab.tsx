@@ -4,6 +4,7 @@ import {
   ScrollView, ActivityIndicator, Alert, Modal
 } from 'react-native'
 import { ClipboardList } from 'lucide-react-native'
+import { useRouter } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
@@ -40,6 +41,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export function MyNeedsTab() {
   const { user } = useAuth()
+  const router = useRouter()
   const [needs, setNeeds] = useState<MyNeed[]>([])
   const [loading, setLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
@@ -83,8 +85,10 @@ export function MyNeedsTab() {
           </View>
         ) : (
           needs.map(need => (
-            <View
+            <TouchableOpacity
               key={need.id}
+              activeOpacity={(need.status === 'open' || need.status === 'partially_fulfilled') ? 0.8 : 1}
+              onPress={() => (need.status === 'open' || need.status === 'partially_fulfilled') && router.push({ pathname: '/(edit)/edit-need-post', params: { id: need.id } })}
               style={{
                 backgroundColor: 'white',
                 borderRadius: 20,
@@ -118,7 +122,7 @@ export function MyNeedsTab() {
                   <Text style={{ fontWeight: '700', fontSize: 13, color: '#DC2626' }}>Hapus Post</Text>
                 </TouchableOpacity>
               )}
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>

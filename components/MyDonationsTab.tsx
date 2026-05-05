@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity,
   ScrollView, Image, ActivityIndicator, Alert, Modal
 } from 'react-native'
+import { useRouter } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
@@ -40,6 +41,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export function MyDonationsTab() {
   const { user } = useAuth()
+  const router = useRouter()
   const [posts, setPosts] = useState<MyPost[]>([])
   const [loading, setLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
@@ -84,8 +86,10 @@ export function MyDonationsTab() {
         ) : (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
             {posts.map(post => (
-              <View
+              <TouchableOpacity
                 key={post.id}
+                activeOpacity={post.status === 'available' ? 0.8 : 1}
+                onPress={() => post.status === 'available' && router.push({ pathname: '/(edit)/edit-donation-post', params: { id: post.id } })}
                 style={{
                   width: '47%',
                   backgroundColor: 'white',
@@ -126,7 +130,7 @@ export function MyDonationsTab() {
                     </TouchableOpacity>
                   )}
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
