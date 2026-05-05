@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import {
   View, Text, TouchableOpacity,
-  ScrollView, Image, ActivityIndicator, Alert, Modal
+  ScrollView, Image, ActivityIndicator, Alert
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
+import { ConfirmModal } from '@/components/ConfirmModal'
 
 type MyPost = {
   id: string
@@ -136,32 +137,15 @@ export function MyDonationsTab() {
         )}
       </ScrollView>
 
-      <Modal visible={!!deleteConfirm} transparent animationType="fade" onRequestClose={() => setDeleteConfirm(null)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 32 }}>
-          <View style={{ backgroundColor: 'white', borderRadius: 24, padding: 24, width: '100%' }}>
-            <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.textDark, marginBottom: 8 }}>Hapus Donasi?</Text>
-            <Text style={{ fontSize: 14, color: Colors.textMuted, lineHeight: 20, marginBottom: 24 }}>
-              Post donasi ini akan dihapus dan tidak bisa dikembalikan.
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => setDeleteConfirm(null)}
-                style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#F3F4F6' }}
-              >
-                <Text style={{ fontWeight: '700', color: Colors.textMuted }}>Batal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => { if (deleteConfirm) deletePost(deleteConfirm); setDeleteConfirm(null) }}
-                style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#DC2626' }}
-              >
-                <Text style={{ fontWeight: '700', color: 'white' }}>Hapus</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ConfirmModal
+        visible={!!deleteConfirm}
+        title="Hapus Donasi?"
+        message="Post donasi ini akan dihapus dan tidak bisa dikembalikan."
+        confirmLabel="Hapus"
+        confirmColor="#DC2626"
+        onCancel={() => setDeleteConfirm(null)}
+        onConfirm={() => { if (deleteConfirm) deletePost(deleteConfirm); setDeleteConfirm(null) }}
+      />
     </>
   )
 }

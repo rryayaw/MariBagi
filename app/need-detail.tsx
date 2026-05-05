@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
 import { NeedDetail } from '@/types'
+import { getRelativeTime } from '@/lib/utils'
 
 type MyDonation = {
   id: string
@@ -34,16 +35,6 @@ export default function NeedDetailScreen() {
   const [myRequestStatus, setMyRequestStatus] = useState<'available' | 'reserved' | null>(null)
 
   const isDonor = role === 'donor'
-
-  const getRelativeTime = (createdAt: string) => {
-    const diffMs = Date.now() - new Date(createdAt).getTime()
-    const mins = Math.floor(diffMs / 60000)
-    const hours = Math.floor(diffMs / 3600000)
-    const days = Math.floor(diffMs / 86400000)
-    if (mins < 60) return `${mins} menit lalu`
-    if (hours < 24) return `${hours} jam lalu`
-    return `${days} hari lalu`
-  }
 
   useEffect(() => {
     if (!id) { setError('Invalid item'); setLoading(false); return }

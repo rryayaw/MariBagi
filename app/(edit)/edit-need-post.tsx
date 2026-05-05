@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   View, Text, TouchableOpacity, ScrollView,
-  ActivityIndicator, Alert, Modal
+  ActivityIndicator, Alert
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, Type, FileText, CheckCircle } from 'lucide-react-native'
@@ -9,6 +9,7 @@ import { useCategories } from '@/hooks/useCategories'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
 import { InputField } from '@/components/InputField'
+import { ConfirmModal } from '@/components/ConfirmModal'
 
 type Urgency = 'normal' | 'urgent'
 
@@ -180,61 +181,25 @@ export default function EditNeedPostScreen() {
         </View>
       </ScrollView>
 
-      {/* Save confirm modal */}
-      <Modal visible={saveConfirm} transparent animationType="fade" onRequestClose={() => setSaveConfirm(false)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 32 }}>
-          <View style={{ backgroundColor: 'white', borderRadius: 24, padding: 24, width: '100%' }}>
-            <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.textDark, marginBottom: 8 }}>Simpan Perubahan?</Text>
-            <Text style={{ fontSize: 14, color: Colors.textMuted, lineHeight: 20, marginBottom: 24 }}>
-              Perubahan pada kebutuhan ini akan disimpan.
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => setSaveConfirm(false)}
-                style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#F3F4F6' }}
-              >
-                <Text style={{ fontWeight: '700', color: Colors.textMuted }}>Batal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => { setSaveConfirm(false); handleSave() }}
-                style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: Colors.orange }}
-              >
-                <Text style={{ fontWeight: '700', color: 'white' }}>Simpan</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Discard confirm modal */}
-      <Modal visible={discardConfirm} transparent animationType="fade" onRequestClose={() => setDiscardConfirm(false)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 32 }}>
-          <View style={{ backgroundColor: 'white', borderRadius: 24, padding: 24, width: '100%' }}>
-            <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.textDark, marginBottom: 8 }}>Batalkan Perubahan?</Text>
-            <Text style={{ fontSize: 14, color: Colors.textMuted, lineHeight: 20, marginBottom: 24 }}>
-              Perubahan yang belum disimpan akan hilang.
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => setDiscardConfirm(false)}
-                style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#F3F4F6' }}
-              >
-                <Text style={{ fontWeight: '700', color: Colors.textMuted }}>Tidak</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => { setDiscardConfirm(false); router.back() }}
-                style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#DC2626' }}
-              >
-                <Text style={{ fontWeight: '700', color: 'white' }}>Batalkan</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ConfirmModal
+        visible={saveConfirm}
+        title="Simpan Perubahan?"
+        message="Perubahan pada kebutuhan ini akan disimpan."
+        confirmLabel="Simpan"
+        confirmColor={Colors.orange}
+        onCancel={() => setSaveConfirm(false)}
+        onConfirm={() => { setSaveConfirm(false); handleSave() }}
+      />
+      <ConfirmModal
+        visible={discardConfirm}
+        title="Batalkan Perubahan?"
+        message="Perubahan yang belum disimpan akan hilang."
+        confirmLabel="Batalkan"
+        cancelLabel="Tidak"
+        confirmColor="#DC2626"
+        onCancel={() => setDiscardConfirm(false)}
+        onConfirm={() => { setDiscardConfirm(false); router.back() }}
+      />
     </>
   )
 }
