@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
 import { DonationDetail } from '@/types'
 import { getRelativeTime } from '@/lib/utils'
+import { ConfirmModal } from '@/components/ConfirmModal'
 
 type MyNeed = {
   id: string
@@ -33,6 +34,8 @@ export default function DonationDetailScreen() {
   const [pickerLoading, setPickerLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [myRequestStatus, setMyRequestStatus] = useState<'available' | 'reserved' | null>(null)
+  const [myRequestId, setMyRequestId] = useState<string | null>(null)
+  const [cancelConfirm, setCancelConfirm] = useState(false)
 
   const isOrg = role === 'organization'
 
@@ -64,13 +67,16 @@ export default function DonationDetailScreen() {
       if (user) {
         const { data: req } = await supabase
           .from('requests')
-          .select('status')
+          .select('id, status')
           .eq('org_id', user.id)
           .eq('donation_id', id)
           .neq('status', 'cancelled')
           .limit(1)
           .maybeSingle()
-        if (req) setMyRequestStatus(req.status as 'available' | 'reserved')
+        if (req) {
+          setMyRequestStatus(req.status as 'available' | 'reserved')
+          setMyRequestId(req.id)
+        }
       }
     } catch (err) {
       setError(String(err))
@@ -255,8 +261,18 @@ export default function DonationDetailScreen() {
                 <Text className="text-base font-bold text-text-muted">Sudah Dipesan</Text>
               </View>
             ) : myRequestStatus === 'reserved' ? (
-              <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: '#D1FAE5' }}>
-                <Text className="text-base font-bold" style={{ color: '#059669' }}>Permintaanmu Diterima ✓</Text>
+              <View style={{ gap: 10 }}>
+                <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: '#D1FAE5' }}>
+                  <Text className="text-base font-bold" style={{ color: '#059669' }}>Permintaanmu Diterima ✓</Text>
+                </View>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setCancelConfirm(true)}
+                  className="rounded-2xl py-3 items-center"
+                  style={{ backgroundColor: '#FEE2E2' }}
+                >
+                  <Text className="text-sm font-bold" style={{ color: '#DC2626' }}>Batalkan Permintaan</Text>
+                </TouchableOpacity>
               </View>
             ) : myRequestStatus === 'available' ? (
               <View>
@@ -298,6 +314,23 @@ export default function DonationDetailScreen() {
           ) : null}
         </View>
       </ScrollView>
+
+      <ConfirmModal
+        visible={cancelConfirm}
+        title="Batalkan Permintaan?"
+        message="Permintaan yang sudah diterima ini akan dibatalkan."
+        confirmLabel="Batalkan"
+        confirmColor="#DC2626"
+        onCancel={() => setCancelConfirm(false)}
+        onConfirm={async () => {
+          setCancelConfirm(false)
+          if (!myRequestId) return
+          const { error } = await supabase.from('requests').update({ status: 'cancelled' }).eq('id', myRequestId)
+          if (error) { Alert.alert('Gagal', error.message); return }
+          setMyRequestStatus(null)
+          setMyRequestId(null)
+        }}
+      />
 
       {/* Need picker modal */}
       <Modal visible={showPicker} animationType="slide" transparent onRequestClose={() => setShowPicker(false)}>

@@ -70,6 +70,29 @@ export default function StatusScreen() {
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status: status as Request['status'] } : r))
   }
 
+  const handleHubungi = async (donorId: string, orgId: string) => {
+    const { data: existing } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('donor_id', donorId)
+      .eq('org_id', orgId)
+      .maybeSingle()
+
+    if (existing) {
+      router.push({ pathname: '/chat-detail', params: { id: existing.id } })
+      return
+    }
+
+    const { data: created, error } = await supabase
+      .from('conversations')
+      .insert({ donor_id: donorId, org_id: orgId })
+      .select('id')
+      .single()
+
+    if (error || !created) { Alert.alert('Gagal membuka chat', String(error)); return }
+    router.push({ pathname: '/chat-detail', params: { id: created.id } })
+  }
+
   const isIncoming = (r: Request) => isOrg ? r.initiated === 'donor' : r.initiated === 'org'
 
   const filtered = requests
@@ -141,6 +164,7 @@ export default function StatusScreen() {
                 onCancel={() => setCancelConfirm(r.id)}
                 onSudahKirim={() => setSudahKirimConfirm(r.id)}
                 onSudahTerima={() => setSudahTerimaConfirm(r.id)}
+                onHubungi={() => handleHubungi(r.donor_id, r.org_id)}
               />
             ))
           )}

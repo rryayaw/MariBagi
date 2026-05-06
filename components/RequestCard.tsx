@@ -78,9 +78,10 @@ type Props = {
   onCancel: () => void
   onSudahKirim: () => void
   onSudahTerima: () => void
+  onHubungi: () => void
 }
 
-export function RequestCard({ r, isOrg, accentColor, onPress, onTolak, onTerima, onCancel, onSudahKirim, onSudahTerima }: Props) {
+export function RequestCard({ r, isOrg, accentColor, onPress, onTolak, onTerima, onCancel, onSudahKirim, onSudahTerima, onHubungi }: Props) {
   const incoming = isOrg ? r.initiated === 'donor' : r.initiated === 'org'
   const cancelled = r.status === 'cancelled'
   const stepIndex = getStepIndex(r.status)
@@ -166,7 +167,7 @@ export function RequestCard({ r, isOrg, accentColor, onPress, onTolak, onTerima,
                   <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.primary }}>Sudah Dikirim</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity activeOpacity={0.8} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <TouchableOpacity activeOpacity={0.8} onPress={onHubungi} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <MessageCircle size={12} color={Colors.textMuted} />
                 <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.textMuted }}>Hubungi</Text>
               </TouchableOpacity>
