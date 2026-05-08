@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
 import { formatDate } from '@/lib/utils'
+import { EmptyState } from '@/components/EmptyState'
 
 type Conversation = {
   id: string
@@ -76,12 +77,10 @@ export default function ChatScreen() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100, flexGrow: 1 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accentColor} />}
           ListEmptyComponent={
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 }}>
-              <MessageCircle size={52} color={Colors.textLight} />
-              <Text style={{ color: Colors.textMuted, fontSize: 14, marginTop: 16, textAlign: 'center' }}>
-                Belum ada percakapan.{'\n'}Mulai dari halaman Status.
-              </Text>
-            </View>
+            <EmptyState
+              icon={<MessageCircle size={52} color={Colors.textLight} />}
+              message={`Belum ada percakapan.\nMulai dari halaman Status.`}
+            />
           }
           renderItem={({ item: c }) => {
             const other = isDonor ? c.org : c.donor

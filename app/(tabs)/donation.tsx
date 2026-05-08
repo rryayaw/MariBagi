@@ -4,8 +4,9 @@ import {
   ScrollView, Image, ActivityIndicator, Alert
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import * as Crypto from 'expo-crypto'
-import { Camera, FileText, Type, CheckCircle } from 'lucide-react-native'
+import { Camera, FileText, Type } from 'lucide-react-native'
+import { uploadImage } from '@/lib/imageUpload'
+import { OptionCard } from '@/components/OptionCard'
 import { useAuth } from '@/context/AuthContext'
 import { useCategories } from '@/hooks/useCategories'
 import { supabase } from '@/lib/supabase'
@@ -36,30 +37,13 @@ export default function PostDonationScreen() {
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') return Alert.alert('Izin diperlukan', 'Izinkan akses ke galeri foto.')
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.7,
-    })
-    if (!result.canceled) await uploadImage(result.assets[0].uri)
-  }
-
-  const uploadImage = async (uri: string) => {
-    try {
-      setUploading(true)
-      const ext = uri.startsWith('blob:') ? 'jpg' : (uri.split('.').pop() ?? 'jpg')
-      const filePath = `${user?.id}/${Crypto.randomUUID()}.${ext}`
-      const blob = await (await fetch(uri)).blob()
-      const { error } = await supabase.storage.from('donations').upload(filePath, blob, { upsert: true })
-      if (error) throw error
-      const { data } = supabase.storage.from('donations').getPublicUrl(filePath)
-      setPhotoUrl(`${data.publicUrl}?t=${Date.now()}`)
-    } catch {
-      Alert.alert('Gagal mengunggah foto.')
-    } finally {
-      setUploading(false)
-    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.7 })
+    if (result.canceled || !user) return
+    setUploading(true)
+    const url = await uploadImage(result.assets[0].uri, 'donations', user.id)
+    setUploading(false)
+    if (url) setPhotoUrl(url)
+    else Alert.alert('Gagal mengunggah foto.')
   }
 
   const handleSubmit = async () => {
@@ -190,28 +174,18 @@ export default function PostDonationScreen() {
               {([
                 { value: 'pickup', label: 'Jemput', desc: 'Orang datang ke lokasimu', emoji: '🚗' },
                 { value: 'dropoff', label: 'Antar', desc: 'Kamu antar ke orang', emoji: '📦' },
-              ] as { value: PickupMethod; label: string; desc: string; emoji: string }[]).map(opt => {
-                const active = pickupMethod === opt.value
-                return (
-                  <TouchableOpacity
-                    key={opt.value}
-                    onPress={() => setPickupMethod(opt.value)}
-                    activeOpacity={0.8}
-                    className="flex-1 bg-white rounded-2xl p-4 shadow-sm"
-                    style={{ borderWidth: 2, borderColor: active ? Colors.primary : 'transparent' }}
-                  >
-                    <View className="flex-row items-center justify-between mb-2">
-                      <Text className="text-xl">{opt.emoji}</Text>
-                      {active && <CheckCircle size={16} color={Colors.primary} fill={Colors.primary} />}
-                    </View>
-                    <Text className="text-sm font-bold text-text-dark">{opt.label}</Text>
-                    <Text className="text-xs text-text-muted mt-0.5">{opt.desc}</Text>
-                    <View className="mt-3 self-start px-2 py-0.5 rounded-full" style={{ backgroundColor: active ? Colors.donorBg : '#F3F4F6' }}>
-                      <Text className="text-xs font-semibold" style={{ color: active ? Colors.primary : Colors.textLight }}>{opt.label}</Text>
-                    </View>
-                  </TouchableOpacity>
-                )
-              })}
+              ] as { value: PickupMethod; label: string; desc: string; emoji: string }[]).map(opt => (
+                <OptionCard
+                  key={opt.value}
+                  label={opt.label}
+                  desc={opt.desc}
+                  emoji={opt.emoji}
+                  active={pickupMethod === opt.value}
+                  onPress={() => setPickupMethod(opt.value)}
+                  accentColor={Colors.primary}
+                  activeBg={Colors.donorBg}
+                />
+              ))}
             </View>
 
             {error && <Text className="text-red-500 text-xs text-center mb-4">{error}</Text>}

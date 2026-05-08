@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
-import * as Crypto from 'expo-crypto'
+import { uploadImage } from '@/lib/imageUpload'
 import { ArrowLeft, Camera, User, MapPin } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -70,34 +70,13 @@ export default function EditProfileScreen() {
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') return Alert.alert('Izin diperlukan', 'Izinkan akses ke galeri foto kamu.')
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    })
-
-    if (!result.canceled) await uploadImage(result.assets[0].uri)
-  }
-
-  const uploadImage = async (uri: string) => {
-    try {
-      setUploading(true)
-      const ext = uri.startsWith('blob:') ? 'jpg' : (uri.split('.').pop() ?? 'jpg')
-      const filePath = `${user?.id}/${Crypto.randomUUID()}.${ext}`
-      const blob = await (await fetch(uri)).blob()
-
-      const { error } = await supabase.storage.from('avatars').upload(filePath, blob, { upsert: true })
-      if (error) throw error
-
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
-      setProfPic(`${data.publicUrl}?t=${Date.now()}`)
-    } catch {
-      Alert.alert('Gagal mengunggah foto.')
-    } finally {
-      setUploading(false)
-    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 })
+    if (result.canceled || !user) return
+    setUploading(true)
+    const url = await uploadImage(result.assets[0].uri, 'avatars', user.id)
+    setUploading(false)
+    if (url) setProfPic(url)
+    else Alert.alert('Gagal mengunggah foto.')
   }
 
   const handleSave = async () => {

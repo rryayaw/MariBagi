@@ -4,7 +4,8 @@ import {
   ActivityIndicator, Alert
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ArrowLeft, Type, FileText, CheckCircle } from 'lucide-react-native'
+import { ArrowLeft, Type, FileText } from 'lucide-react-native'
+import { OptionCard } from '@/components/OptionCard'
 import { useCategories } from '@/hooks/useCategories'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
@@ -138,24 +139,17 @@ export default function EditNeedPostScreen() {
             {([
               { value: 'normal', label: 'Normal', desc: 'Dibutuhkan tapi tidak mendesak', emoji: '📋' },
               { value: 'urgent', label: 'Mendesak', desc: 'Dibutuhkan segera', emoji: '🚨' },
-            ] as { value: Urgency; label: string; desc: string; emoji: string }[]).map(opt => {
-              const active = urgency === opt.value
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  onPress={() => setUrgency(opt.value)}
-                  activeOpacity={0.8}
-                  style={{ flex: 1, backgroundColor: 'white', borderRadius: 16, padding: 16, borderWidth: 2, borderColor: active ? Colors.orange : 'transparent', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 1 }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <Text style={{ fontSize: 20 }}>{opt.emoji}</Text>
-                    {active && <CheckCircle size={16} color={Colors.orange} fill={Colors.orange} />}
-                  </View>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.textDark }}>{opt.label}</Text>
-                  <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>{opt.desc}</Text>
-                </TouchableOpacity>
-              )
-            })}
+            ] as { value: Urgency; label: string; desc: string; emoji: string }[]).map(opt => (
+              <OptionCard
+                key={opt.value}
+                label={opt.label}
+                desc={opt.desc}
+                emoji={opt.emoji}
+                active={urgency === opt.value}
+                onPress={() => setUrgency(opt.value)}
+                accentColor={Colors.orange}
+              />
+            ))}
           </View>
 
           {error && <Text style={{ color: '#DC2626', fontSize: 12, textAlign: 'center', marginBottom: 16 }}>{error}</Text>}

@@ -8,6 +8,8 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
 import { ConfirmModal } from '@/components/ConfirmModal'
+import { EmptyState } from '@/components/EmptyState'
+import { DONATION_DONATION_STATUS_LABEL, DONATION_DONATION_STATUS_BG, DONATION_DONATION_STATUS_COLOR } from '@/lib/statusConstants'
 
 type MyPost = {
   id: string
@@ -17,27 +19,6 @@ type MyPost = {
   pickup_method: 'pickup' | 'dropoff'
   photo_url: string | null
   category: { name: string } | null
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  available: 'Tersedia',
-  reserved: 'Dipesan',
-  completed: 'Selesai',
-  cancelled: 'Dibatalkan',
-}
-
-const STATUS_BG: Record<string, string> = {
-  available: '#D1FAE5',
-  reserved: '#FEF3C7',
-  completed: '#EDE9FE',
-  cancelled: '#F3F4F6',
-}
-
-const STATUS_COLOR: Record<string, string> = {
-  available: '#059669',
-  reserved: '#D97706',
-  completed: '#7C3AED',
-  cancelled: '#9CA3AF',
 }
 
 export function MyDonationsTab() {
@@ -78,12 +59,7 @@ export function MyDonationsTab() {
             <ActivityIndicator color={Colors.primary} />
           </View>
         ) : posts.length === 0 ? (
-          <View style={{ paddingVertical: 80, alignItems: 'center' }}>
-            <Text style={{ fontSize: 40, marginBottom: 12 }}>📦</Text>
-            <Text style={{ color: Colors.textMuted, fontSize: 14, textAlign: 'center' }}>
-              Kamu belum membuat donasi apapun.
-            </Text>
-          </View>
+          <EmptyState icon={<Text style={{ fontSize: 40 }}>📦</Text>} message="Kamu belum membuat donasi apapun." />
         ) : (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
             {posts.map(post => (
@@ -116,9 +92,9 @@ export function MyDonationsTab() {
                   <Text style={{ fontSize: 11, color: Colors.textMuted, marginBottom: 8 }} numberOfLines={1}>
                     {post.category?.name} · {post.pickup_method === 'pickup' ? 'Jemput' : 'Antar'}
                   </Text>
-                  <View style={{ alignSelf: 'flex-start', backgroundColor: STATUS_BG[post.status], paddingHorizontal: 7, paddingVertical: 2, borderRadius: 99, marginBottom: post.status === 'available' ? 8 : 0 }}>
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: STATUS_COLOR[post.status] }}>
-                      {STATUS_LABEL[post.status]}
+                  <View style={{ alignSelf: 'flex-start', backgroundColor: DONATION_STATUS_BG[post.status], paddingHorizontal: 7, paddingVertical: 2, borderRadius: 99, marginBottom: post.status === 'available' ? 8 : 0 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '600', color: DONATION_STATUS_COLOR[post.status] }}>
+                      {DONATION_STATUS_LABEL[post.status]}
                     </Text>
                   </View>
                   {post.status === 'available' && (

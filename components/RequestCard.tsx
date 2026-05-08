@@ -3,25 +3,7 @@ import { Clock, Package, Truck, Star, CheckCircle, MessageCircle } from 'lucide-
 import { Colors } from '@/constants/colors'
 import { Request } from '@/types'
 import { formatDate } from '@/lib/utils'
-
-const STATUS_LABEL: Record<string, string> = {
-  available: 'Menunggu',
-  reserved: 'Disetujui',
-  completed: 'Selesai',
-  cancelled: 'Dibatalkan',
-}
-const STATUS_COLOR: Record<string, string> = {
-  available: '#F59E0B',
-  reserved: '#3B82F6',
-  completed: '#10B981',
-  cancelled: '#9CA3AF',
-}
-const STATUS_BG: Record<string, string> = {
-  available: '#FEF3C7',
-  reserved: '#EFF6FF',
-  completed: '#D1FAE5',
-  cancelled: '#F3F4F6',
-}
+import { REQUEST_REQUEST_STATUS_LABEL, REQUEST_REQUEST_STATUS_BG, REQUEST_REQUEST_STATUS_COLOR } from '@/lib/statusConstants'
 
 const STEPS = [
   { label: 'Menunggu', Icon: Clock },
@@ -123,10 +105,10 @@ export function RequestCard({ r, isOrg, accentColor, onPress, onTolak, onTerima,
           <Text style={{ fontSize: 11, color: Colors.textLight }} numberOfLines={1}>{subLabel}</Text>
         </View>
 
-        <View style={{ backgroundColor: STATUS_BG[r.status], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 0 }}>
-          {r.status === 'available' && <Clock size={10} color={STATUS_COLOR[r.status]} />}
-          {(r.status === 'reserved' || r.status === 'completed') && <CheckCircle size={10} color={STATUS_COLOR[r.status]} />}
-          <Text style={{ fontSize: 11, fontWeight: '700', color: STATUS_COLOR[r.status] }}>{STATUS_LABEL[r.status]}</Text>
+        <View style={{ backgroundColor: REQUEST_STATUS_BG[r.status], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+          {r.status === 'available' && <Clock size={10} color={REQUEST_STATUS_COLOR[r.status]} />}
+          {(r.status === 'reserved' || r.status === 'completed') && <CheckCircle size={10} color={REQUEST_STATUS_COLOR[r.status]} />}
+          <Text style={{ fontSize: 11, fontWeight: '700', color: REQUEST_STATUS_COLOR[r.status] }}>{REQUEST_STATUS_LABEL[r.status]}</Text>
         </View>
       </View>
 

@@ -8,7 +8,7 @@ import { User, MapPin, Camera, Navigation } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
-import * as Crypto from 'expo-crypto'
+import { uploadImage } from '@/lib/imageUpload'
 
 export default function OnboardingScreen() {
   const { user, role, refreshProfile } = useAuth()
@@ -26,50 +26,15 @@ export default function OnboardingScreen() {
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') return Alert.alert('Permission needed', 'Allow access to your photo library.')
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    })
-
-    if (!result.canceled) {
-      await uploadImage(result.assets[0].uri)
-    }
-  }
-
-  // Upload image to Storage
- const uploadImage = async (uri: string) => {
-  try {
+    if (status !== 'granted') return Alert.alert('Izin diperlukan', 'Izinkan akses ke galeri foto.')
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 })
+    if (result.canceled || !user) return
     setUploading(true)
-
-    const ext = uri.startsWith('blob:') ? 'jpg' : (uri.split('.').pop() ?? 'jpg')
-    const newFileName = Crypto.randomUUID()
-    const filePath = `${user?.id}/${newFileName}.${ext}`
-
-    const response = await fetch(uri)
-    const blob = await response.blob()
-
-    const { data, error } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, blob, { upsert: true })
-
-    if (error) {
-      console.log('storage error:', error)
-      return
-    }
-
-    console.log('upload success:', data)
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-    setProfilePic(`${urlData.publicUrl}?t=${Date.now()}`)
-  } catch (e) {
-    console.log('upload error:', e)
-  } finally {
+    const url = await uploadImage(result.assets[0].uri, 'avatars', user.id)
     setUploading(false)
+    if (url) setProfilePic(url)
+    else Alert.alert('Gagal mengunggah foto.')
   }
-}
 
   // Get current location
   const handleGetLocation = async () => {

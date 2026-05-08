@@ -3,7 +3,8 @@ import {
   View, Text, TouchableOpacity,
   ScrollView, ActivityIndicator, Alert
 } from 'react-native'
-import { FileText, Type, CheckCircle } from 'lucide-react-native'
+import { FileText, Type } from 'lucide-react-native'
+import { OptionCard } from '@/components/OptionCard'
 import { useAuth } from '@/context/AuthContext'
 import { useCategories } from '@/hooks/useCategories'
 import { supabase } from '@/lib/supabase'
@@ -144,39 +145,18 @@ export default function PostNeedScreen() {
           {([
             { value: 'normal', label: 'Normal', desc: 'Dibutuhkan tapi tidak mendesak', emoji: '📋' },
             { value: 'urgent', label: 'Mendesak', desc: 'Dibutuhkan segera', emoji: '🚨' },
-          ] as { value: Urgency; label: string; desc: string; emoji: string }[]).map(opt => {
-            const active = urgency === opt.value
-            return (
-              <TouchableOpacity
-                key={opt.value}
-                onPress={() => setUrgency(opt.value)}
-                activeOpacity={0.8}
-                className="flex-1 bg-white rounded-2xl p-4 shadow-sm"
-                style={{
-                  borderWidth: 2,
-                  borderColor: active ? Colors.orange : 'transparent',
-                }}
-              >
-                <View className="flex-row items-center justify-between mb-2">
-                  <Text className="text-xl">{opt.emoji}</Text>
-                  {active && <CheckCircle size={16} color={Colors.orange} fill={Colors.orange} />}
-                </View>
-                <Text className="text-sm font-bold text-text-dark">{opt.label}</Text>
-                <Text className="text-xs text-text-muted mt-0.5">{opt.desc}</Text>
-                <View
-                  className="mt-3 self-start px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: active ? Colors.orgBg : '#F3F4F6' }}
-                >
-                  <Text
-                    className="text-xs font-semibold"
-                    style={{ color: active ? Colors.orange : Colors.textLight }}
-                  >
-                    {opt.label}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )
-          })}
+          ] as { value: Urgency; label: string; desc: string; emoji: string }[]).map(opt => (
+            <OptionCard
+              key={opt.value}
+              label={opt.label}
+              desc={opt.desc}
+              emoji={opt.emoji}
+              active={urgency === opt.value}
+              onPress={() => setUrgency(opt.value)}
+              accentColor={Colors.orange}
+              activeBg={Colors.orgBg}
+            />
+          ))}
         </View>
 
         {error && <Text className="text-red-500 text-xs text-center mb-4">{error}</Text>}

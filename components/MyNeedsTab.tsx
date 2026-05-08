@@ -9,6 +9,8 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
 import { ConfirmModal } from '@/components/ConfirmModal'
+import { EmptyState } from '@/components/EmptyState'
+import { NEED_NEED_STATUS_LABEL, NEED_NEED_STATUS_BG, NEED_NEED_STATUS_COLOR } from '@/lib/statusConstants'
 
 type MyNeed = {
   id: string
@@ -17,27 +19,6 @@ type MyNeed = {
   urgency: 'normal' | 'urgent'
   created_at: string
   category: { name: string } | null
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  open: 'Terbuka',
-  partially_fulfilled: 'Sebagian',
-  fulfilled: 'Terpenuhi',
-  closed: 'Ditutup',
-}
-
-const STATUS_BG: Record<string, string> = {
-  open: '#D1FAE5',
-  partially_fulfilled: '#FEF3C7',
-  fulfilled: '#EDE9FE',
-  closed: '#F3F4F6',
-}
-
-const STATUS_COLOR: Record<string, string> = {
-  open: '#059669',
-  partially_fulfilled: '#D97706',
-  fulfilled: '#7C3AED',
-  closed: '#9CA3AF',
 }
 
 export function MyNeedsTab() {
@@ -78,12 +59,7 @@ export function MyNeedsTab() {
             <ActivityIndicator color={Colors.orange} />
           </View>
         ) : needs.length === 0 ? (
-          <View style={{ paddingVertical: 80, alignItems: 'center' }}>
-            <ClipboardList size={48} color={Colors.textLight} />
-            <Text style={{ color: Colors.textMuted, fontSize: 14, textAlign: 'center', marginTop: 16 }}>
-              Kamu belum membuat kebutuhan apapun.
-            </Text>
-          </View>
+          <EmptyState icon={<ClipboardList size={48} color={Colors.textLight} />} message="Kamu belum membuat kebutuhan apapun." />
         ) : (
           needs.map(need => (
             <TouchableOpacity
@@ -105,9 +81,9 @@ export function MyNeedsTab() {
                 <Text style={{ fontWeight: '700', color: Colors.textDark, fontSize: 14, flex: 1, marginRight: 12 }} numberOfLines={2}>
                   {need.title}
                 </Text>
-                <View style={{ backgroundColor: STATUS_BG[need.status], paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: STATUS_COLOR[need.status] }}>
-                    {STATUS_LABEL[need.status]}
+                <View style={{ backgroundColor: NEED_STATUS_BG[need.status], paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: NEED_STATUS_COLOR[need.status] }}>
+                    {NEED_STATUS_LABEL[need.status]}
                   </Text>
                 </View>
               </View>

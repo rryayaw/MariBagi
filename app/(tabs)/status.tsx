@@ -11,6 +11,7 @@ import { Colors } from '@/constants/colors'
 import { Request } from '@/types'
 import { RequestCard } from '@/components/RequestCard'
 import { ConfirmModal } from '@/components/ConfirmModal'
+import { EmptyState } from '@/components/EmptyState'
 
 type TabType = 'all' | 'incoming' | 'outgoing'
 
@@ -142,12 +143,10 @@ export default function StatusScreen() {
               <ActivityIndicator color={accentColor} size="large" />
             </View>
           ) : filtered.length === 0 ? (
-            <View className="py-20 items-center">
-              <ClipboardList size={52} color={Colors.textLight} />
-              <Text className="text-text-muted text-sm mt-4 text-center">
-                {tab === 'all' ? 'Belum ada permintaan.' : tab === 'incoming' ? 'Tidak ada permintaan masuk.' : 'Tidak ada permintaan keluar.'}
-              </Text>
-            </View>
+            <EmptyState
+              icon={<ClipboardList size={52} color={Colors.textLight} />}
+              message={tab === 'all' ? 'Belum ada permintaan.' : tab === 'incoming' ? 'Tidak ada permintaan masuk.' : 'Tidak ada permintaan keluar.'}
+            />
           ) : (
             filtered.map(r => (
               <RequestCard

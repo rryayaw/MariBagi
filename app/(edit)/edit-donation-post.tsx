@@ -5,8 +5,9 @@ import {
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
-import * as Crypto from 'expo-crypto'
-import { ArrowLeft, Camera, Type, FileText, CheckCircle } from 'lucide-react-native'
+import { ArrowLeft, Camera, Type, FileText } from 'lucide-react-native'
+import { uploadImage } from '@/lib/imageUpload'
+import { OptionCard } from '@/components/OptionCard'
 import { useAuth } from '@/context/AuthContext'
 import { useCategories } from '@/hooks/useCategories'
 import { supabase } from '@/lib/supabase'
@@ -65,30 +66,13 @@ export default function EditDonationPostScreen() {
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') return Alert.alert('Izin diperlukan', 'Izinkan akses ke galeri foto.')
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.7,
-    })
-    if (!result.canceled) await uploadImage(result.assets[0].uri)
-  }
-
-  const uploadImage = async (uri: string) => {
-    try {
-      setUploading(true)
-      const ext = uri.startsWith('blob:') ? 'jpg' : (uri.split('.').pop() ?? 'jpg')
-      const filePath = `${user?.id}/${Crypto.randomUUID()}.${ext}`
-      const blob = await (await fetch(uri)).blob()
-      const { error } = await supabase.storage.from('donations').upload(filePath, blob, { upsert: true })
-      if (error) throw error
-      const { data } = supabase.storage.from('donations').getPublicUrl(filePath)
-      setPhotoUrl(`${data.publicUrl}?t=${Date.now()}`)
-    } catch {
-      Alert.alert('Gagal mengunggah foto.')
-    } finally {
-      setUploading(false)
-    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.7 })
+    if (result.canceled || !user) return
+    setUploading(true)
+    const url = await uploadImage(result.assets[0].uri, 'donations', user.id)
+    setUploading(false)
+    if (url) setPhotoUrl(url)
+    else Alert.alert('Gagal mengunggah foto.')
   }
 
   const handleSave = async () => {
@@ -198,24 +182,17 @@ export default function EditDonationPostScreen() {
             {([
               { value: 'pickup', label: 'Jemput', desc: 'Orang datang ke lokasimu', emoji: '🚗' },
               { value: 'dropoff', label: 'Antar', desc: 'Kamu antar ke orang', emoji: '📦' },
-            ] as { value: PickupMethod; label: string; desc: string; emoji: string }[]).map(opt => {
-              const active = pickupMethod === opt.value
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  onPress={() => setPickupMethod(opt.value)}
-                  activeOpacity={0.8}
-                  style={{ flex: 1, backgroundColor: 'white', borderRadius: 16, padding: 16, borderWidth: 2, borderColor: active ? Colors.primary : 'transparent', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 1 }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <Text style={{ fontSize: 20 }}>{opt.emoji}</Text>
-                    {active && <CheckCircle size={16} color={Colors.primary} fill={Colors.primary} />}
-                  </View>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.textDark }}>{opt.label}</Text>
-                  <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>{opt.desc}</Text>
-                </TouchableOpacity>
-              )
-            })}
+            ] as { value: PickupMethod; label: string; desc: string; emoji: string }[]).map(opt => (
+              <OptionCard
+                key={opt.value}
+                label={opt.label}
+                desc={opt.desc}
+                emoji={opt.emoji}
+                active={pickupMethod === opt.value}
+                onPress={() => setPickupMethod(opt.value)}
+                accentColor={Colors.primary}
+              />
+            ))}
           </View>
 
           {error && <Text style={{ color: '#DC2626', fontSize: 12, textAlign: 'center', marginBottom: 16 }}>{error}</Text>}
