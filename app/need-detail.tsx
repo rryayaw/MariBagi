@@ -16,6 +16,7 @@ import { ConfirmModal } from '@/components/ConfirmModal'
 type MyDonation = {
   id: string
   title: string
+  category_id: string | null
   category: { name: string } | null
   pickup_method: 'pickup' | 'dropoff'
 }
@@ -37,6 +38,7 @@ export default function NeedDetailScreen() {
   const [myRequestStatus, setMyRequestStatus] = useState<'available' | 'reserved' | null>(null)
   const [myRequestId, setMyRequestId] = useState<string | null>(null)
   const [cancelConfirm, setCancelConfirm] = useState(false)
+  const [mismatchTarget, setMismatchTarget] = useState<MyDonation | null>(null)
 
   const isDonor = role === 'donor'
 
@@ -93,7 +95,7 @@ export default function NeedDetailScreen() {
     try {
       const { data } = await supabase
         .from('donations')
-        .select('id, title, pickup_method, category:category_id(name)')
+        .select('id, title, pickup_method, category_id, category:category_id(name)')
         .eq('donor_id', user.id)
         .eq('status', 'available')
       setMyDonations((data ?? []) as unknown as MyDonation[])
@@ -353,6 +355,16 @@ export default function NeedDetailScreen() {
       </ScrollView>
 
       <ConfirmModal
+        visible={!!mismatchTarget}
+        title="Kategori Tidak Sesuai"
+        message={`Kebutuhan ini berkategori "${item?.category?.name ?? '—'}" sedangkan donasimu berkategori "${mismatchTarget?.category?.name ?? '—'}". Tetap ajukan penawaran ini?`}
+        confirmLabel="Tetap Lanjutkan"
+        confirmColor="#F59E0B"
+        onCancel={() => setMismatchTarget(null)}
+        onConfirm={() => { const t = mismatchTarget; setMismatchTarget(null); if (t) submitRequest(t.id) }}
+      />
+
+      <ConfirmModal
         visible={cancelConfirm}
         title="Batalkan Penawaran?"
         message="Penawaran yang sudah diterima ini akan dibatalkan."
@@ -405,36 +417,47 @@ export default function NeedDetailScreen() {
               </View>
             ) : (
               <ScrollView showsVerticalScrollIndicator={false}>
-                {myDonations.map(d => (
-                  <TouchableOpacity
-                    key={d.id}
-                    activeOpacity={0.8}
-                    onPress={() => submitRequest(d.id)}
-                    disabled={submitting}
-                    style={{
-                      backgroundColor: Colors.donorBg,
-                      borderRadius: 16,
-                      padding: 16,
-                      marginBottom: 10,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontWeight: '700', color: Colors.textDark, fontSize: 15 }} numberOfLines={1}>
-                        {d.title}
-                      </Text>
-                      <Text style={{ color: Colors.textMuted, fontSize: 12, marginTop: 3 }}>
-                        {d.category?.name} · {d.pickup_method === 'pickup' ? 'Bisa dijemput' : 'Diantar'}
-                      </Text>
-                    </View>
-                    {submitting ? (
-                      <ActivityIndicator size="small" color={Colors.primary} style={{ marginLeft: 12 }} />
-                    ) : (
-                      <ChevronRight size={18} color={Colors.primary} style={{ marginLeft: 12 }} />
-                    )}
-                  </TouchableOpacity>
-                ))}
+                {myDonations.map(d => {
+                  const mismatch = d.category_id !== item.category_id
+                  return (
+                    <TouchableOpacity
+                      key={d.id}
+                      activeOpacity={0.8}
+                      onPress={() => { if (mismatch) { setShowPicker(false); setMismatchTarget(d) } else { submitRequest(d.id) } }}
+                      disabled={submitting}
+                      style={{
+                        backgroundColor: mismatch ? '#FFFBEB' : Colors.donorBg,
+                        borderRadius: 16,
+                        padding: 16,
+                        marginBottom: 10,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        borderWidth: mismatch ? 1 : 0,
+                        borderColor: '#FCD34D',
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: '700', color: Colors.textDark, fontSize: 15 }} numberOfLines={1}>
+                          {d.title}
+                        </Text>
+                        <Text style={{ color: Colors.textMuted, fontSize: 12, marginTop: 3 }}>
+                          {d.category?.name} · {d.pickup_method === 'pickup' ? 'Bisa dijemput' : 'Diantar'}
+                        </Text>
+                        {mismatch && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 }}>
+                            <AlertCircle size={11} color="#F59E0B" />
+                            <Text style={{ fontSize: 11, color: '#F59E0B', fontWeight: '600' }}>Kategori tidak sesuai</Text>
+                          </View>
+                        )}
+                      </View>
+                      {submitting ? (
+                        <ActivityIndicator size="small" color={Colors.primary} style={{ marginLeft: 12 }} />
+                      ) : (
+                        <ChevronRight size={18} color={mismatch ? '#F59E0B' : Colors.primary} style={{ marginLeft: 12 }} />
+                      )}
+                    </TouchableOpacity>
+                  )
+                })}
                 <View style={{ height: 16 }} />
               </ScrollView>
             )}

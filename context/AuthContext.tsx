@@ -8,6 +8,7 @@ interface AuthContextType{
     role: 'donor' | 'organization' | null
     isOnboarded: boolean
     loading: boolean
+    isOffline: boolean
     refreshProfile: () => Promise<void>
 }
 
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   role: null,
   isOnboarded: false,
   loading: true,
+  isOffline: false,
   refreshProfile: async () => {}
 })
 
@@ -30,6 +32,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [role, setRole] = useState<'donor' | 'organization' | null>(null)
   const [isOnboarded, setIsOnboarded] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [isOffline, setIsOffline] = useState(false)
 
   //Get initial session
   useEffect(() => {
@@ -54,22 +57,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Fetch user profile to get role and onboarding status
   const fetchProfile = async (userId: string) => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', userId)
         .single()
 
+      if (error) throw error
+
       if (profile) {
         setRole(profile.role)
-
-        // Check if onboarding is complete
+        setIsOffline(false)
         const { data: onboarded } = await supabase.rpc('is_onboarded')
         setIsOnboarded(onboarded ?? false)
+      }
+    } catch (e: any) {
+      const msg = (e?.message ?? '').toLowerCase()
+      if (msg.includes('fetch') || msg.includes('network') || msg.includes('failed')) {
+        setIsOffline(true)
       }
     } finally {
       setLoading(false)
@@ -82,7 +90,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
     return (
-        <AuthContext.Provider value={{ session, user, role, isOnboarded, loading, refreshProfile }}>
+        <AuthContext.Provider value={{ session, user, role, isOnboarded, loading, isOffline, refreshProfile }}>
             {children}
         </AuthContext.Provider>
     )
