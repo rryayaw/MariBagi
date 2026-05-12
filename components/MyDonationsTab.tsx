@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
 import { ConfirmModal } from '@/components/ConfirmModal'
 import { EmptyState } from '@/components/EmptyState'
-import { DONATION_DONATION_STATUS_LABEL, DONATION_DONATION_STATUS_BG, DONATION_DONATION_STATUS_COLOR } from '@/lib/statusConstants'
+import { DONATION_STATUS_LABEL, DONATION_STATUS_BG, DONATION_STATUS_COLOR } from '@/lib/statusConstants'
 
 type MyPost = {
   id: string

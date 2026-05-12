@@ -3,7 +3,7 @@ import { Clock, Package, Truck, Star, CheckCircle, MessageCircle } from 'lucide-
 import { Colors } from '@/constants/colors'
 import { Request } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { REQUEST_REQUEST_STATUS_LABEL, REQUEST_REQUEST_STATUS_BG, REQUEST_REQUEST_STATUS_COLOR } from '@/lib/statusConstants'
+import { REQUEST_STATUS_LABEL, REQUEST_STATUS_BG, REQUEST_STATUS_COLOR } from '@/lib/statusConstants'
 
 const STEPS = [
   { label: 'Menunggu', Icon: Clock },
@@ -61,9 +61,11 @@ type Props = {
   onSudahKirim: () => void
   onSudahTerima: () => void
   onHubungi: () => void
+  onBeriNilai: () => void
+  hasRated: boolean
 }
 
-export function RequestCard({ r, isOrg, accentColor, onPress, onTolak, onTerima, onCancel, onSudahKirim, onSudahTerima, onHubungi }: Props) {
+export function RequestCard({ r, isOrg, accentColor, onPress, onTolak, onTerima, onCancel, onSudahKirim, onSudahTerima, onHubungi, onBeriNilai, hasRated }: Props) {
   const incoming = isOrg ? r.initiated === 'donor' : r.initiated === 'org'
   const cancelled = r.status === 'cancelled'
   const stepIndex = getStepIndex(r.status)
@@ -157,10 +159,17 @@ export function RequestCard({ r, isOrg, accentColor, onPress, onTolak, onTerima,
           )}
 
           {r.status === 'completed' && (
-            <TouchableOpacity activeOpacity={0.8} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: '#FEF3C7', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Star size={12} color="#F59E0B" fill="#F59E0B" />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#D97706' }}>Beri Nilai</Text>
-            </TouchableOpacity>
+            hasRated ? (
+              <View style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <CheckCircle size={12} color="#9CA3AF" />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#9CA3AF' }}>Sudah Dinilai</Text>
+              </View>
+            ) : (
+              <TouchableOpacity activeOpacity={0.8} onPress={onBeriNilai} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: '#FEF3C7', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Star size={12} color="#F59E0B" fill="#F59E0B" />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#D97706' }}>Beri Nilai</Text>
+              </TouchableOpacity>
+            )
           )}
         </View>
       </View>

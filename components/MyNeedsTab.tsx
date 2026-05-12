@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/colors'
 import { ConfirmModal } from '@/components/ConfirmModal'
 import { EmptyState } from '@/components/EmptyState'
-import { NEED_NEED_STATUS_LABEL, NEED_NEED_STATUS_BG, NEED_NEED_STATUS_COLOR } from '@/lib/statusConstants'
+import { NEED_STATUS_LABEL, NEED_STATUS_BG, NEED_STATUS_COLOR } from '@/lib/statusConstants'
 
 type MyNeed = {
   id: string

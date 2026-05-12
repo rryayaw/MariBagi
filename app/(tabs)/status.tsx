@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert, RefreshControl
+  ActivityIndicator, Alert, RefreshControl, Modal, TextInput
 } from 'react-native'
-import { ClipboardList } from 'lucide-react-native'
+import { ClipboardList, Star } from 'lucide-react-native'
 import { useRouter } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { notify } from '@/lib/notifications'
 import { Colors } from '@/constants/colors'
 import { Request } from '@/types'
 import { RequestCard } from '@/components/RequestCard'
@@ -29,6 +30,12 @@ export default function StatusScreen() {
   const [sudahKirimConfirm, setSudahKirimConfirm] = useState<string | null>(null)
   const [sudahTerimaConfirm, setSudahTerimaConfirm] = useState<string | null>(null)
 
+  const [ratedIds, setRatedIds] = useState<Set<string>>(new Set())
+  const [ratingTarget, setRatingTarget] = useState<Request | null>(null)
+  const [ratingScore, setRatingScore] = useState(0)
+  const [ratingComment, setRatingComment] = useState('')
+  const [ratingSubmitting, setRatingSubmitting] = useState(false)
+
   const isOrg = role === 'organization'
   const accentColor = isOrg ? Colors.orange : Colors.primary
 
@@ -36,19 +43,26 @@ export default function StatusScreen() {
     if (!user) return
     try {
       const col = isOrg ? 'org_id' : 'donor_id'
-      const { data, error } = await supabase
-        .from('requests')
-        .select(`
-          *,
-          donation:donation_id(id, title, photo_url, category:category_id(name)),
-          need:need_id(id, title, category:category_id(name)),
-          donor:donor_id(id, full_name, prof_pic),
-          org:org_id(id, full_name, prof_pic)
-        `)
-        .eq(col, user.id)
-        .order('created_at', { ascending: false })
+      const [{ data, error }, { data: ratedData }] = await Promise.all([
+        supabase
+          .from('requests')
+          .select(`
+            *,
+            donation:donation_id(id, title, photo_url, category:category_id(name)),
+            need:need_id(id, title, category:category_id(name)),
+            donor:donor_id(id, full_name, prof_pic),
+            org:org_id(id, full_name, prof_pic)
+          `)
+          .eq(col, user.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('ratings')
+          .select('request_id')
+          .eq('rated_by', user.id),
+      ])
       if (error) throw error
       setRequests((data ?? []) as unknown as Request[])
+      setRatedIds(new Set((ratedData ?? []).map((r: any) => r.request_id as string)))
     } catch (e) {
       Alert.alert('Gagal memuat', String(e))
     }
@@ -69,6 +83,26 @@ export default function StatusScreen() {
     const { error } = await supabase.from('requests').update({ status }).eq('id', id)
     if (error) { Alert.alert('Gagal', String(error)); return }
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status: status as Request['status'] } : r))
+  }
+
+  const submitRating = async () => {
+    if (!ratingTarget || !user || ratingScore === 0) return
+    setRatingSubmitting(true)
+    const ratedEntity = isOrg ? ratingTarget.donor_id : ratingTarget.org_id
+    const { error } = await supabase.from('ratings').insert({
+      rated_by: user.id,
+      rated_entity: ratedEntity,
+      request_id: ratingTarget.id,
+      score: ratingScore,
+      comment: ratingComment.trim() || null,
+    })
+    setRatingSubmitting(false)
+    if (error) { Alert.alert('Gagal mengirim nilai', error.message); return }
+    setRatedIds(prev => new Set([...prev, ratingTarget.id]))
+    setRatingTarget(null)
+    setRatingScore(0)
+    setRatingComment('')
+    Alert.alert('Terima Kasih!', 'Penilaianmu telah dikirim.')
   }
 
   const handleHubungi = async (donorId: string, orgId: string) => {
@@ -164,6 +198,8 @@ export default function StatusScreen() {
                 onSudahKirim={() => setSudahKirimConfirm(r.id)}
                 onSudahTerima={() => setSudahTerimaConfirm(r.id)}
                 onHubungi={() => handleHubungi(r.donor_id, r.org_id)}
+                onBeriNilai={() => { setRatingTarget(r); setRatingScore(0); setRatingComment('') }}
+                hasRated={ratedIds.has(r.id)}
               />
             ))
           )}
@@ -186,7 +222,14 @@ export default function StatusScreen() {
         confirmLabel="Tolak"
         confirmColor="#DC2626"
         onCancel={() => setTolakConfirm(null)}
-        onConfirm={() => { if (tolakConfirm) updateStatus(tolakConfirm, 'cancelled'); setTolakConfirm(null) }}
+        onConfirm={async () => {
+          if (tolakConfirm) {
+            await updateStatus(tolakConfirm, 'cancelled')
+            const r = requests.find(req => req.id === tolakConfirm)
+            if (r) notify(r.donor_id, 'Permintaan Ditolak', `Permintaanmu untuk "${(r as any).donation?.title ?? 'donasi'}" ditolak.`, 'request_rejected', tolakConfirm)
+          }
+          setTolakConfirm(null)
+        }}
       />
       <ConfirmModal
         visible={!!terimaConfirm}
@@ -195,7 +238,14 @@ export default function StatusScreen() {
         confirmLabel="Terima"
         confirmColor="#059669"
         onCancel={() => setTerimaConfirm(null)}
-        onConfirm={() => { if (terimaConfirm) updateStatus(terimaConfirm, 'reserved'); setTerimaConfirm(null) }}
+        onConfirm={async () => {
+          if (terimaConfirm) {
+            await updateStatus(terimaConfirm, 'reserved')
+            const r = requests.find(req => req.id === terimaConfirm)
+            if (r) notify(r.donor_id, 'Permintaan Diterima!', `Permintaanmu untuk "${(r as any).donation?.title ?? 'donasi'}" diterima.`, 'request_accepted', terimaConfirm)
+          }
+          setTerimaConfirm(null)
+        }}
       />
       <ConfirmModal
         visible={!!sudahKirimConfirm}
@@ -204,8 +254,62 @@ export default function StatusScreen() {
         confirmLabel="Sudah Dikirim"
         confirmColor={Colors.primary}
         onCancel={() => setSudahKirimConfirm(null)}
-        onConfirm={() => { if (sudahKirimConfirm) updateStatus(sudahKirimConfirm, 'completed'); setSudahKirimConfirm(null) }}
+        onConfirm={async () => {
+          if (sudahKirimConfirm) {
+            await updateStatus(sudahKirimConfirm, 'completed')
+            const r = requests.find(req => req.id === sudahKirimConfirm)
+            if (r) notify(r.org_id, 'Barang Dalam Perjalanan', `Donatur sedang mengirimkan "${(r as any).donation?.title ?? 'donasi'}".`, 'shipped', sudahKirimConfirm)
+          }
+          setSudahKirimConfirm(null)
+        }}
       />
+      <Modal visible={!!ratingTarget} animationType="slide" transparent onRequestClose={() => setRatingTarget(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: 'white', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24 }}>
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 20 }} />
+            <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 4 }}>Beri Nilai</Text>
+            <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 24 }}>
+              {isOrg ? ratingTarget?.donor?.full_name : ratingTarget?.org?.full_name}
+            </Text>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 24 }}>
+              {[1, 2, 3, 4, 5].map(i => (
+                <TouchableOpacity key={i} onPress={() => setRatingScore(i)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Star size={40} color="#F59E0B" fill={i <= ratingScore ? '#F59E0B' : 'transparent'} />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TextInput
+              value={ratingComment}
+              onChangeText={setRatingComment}
+              placeholder="Tambahkan komentar (opsional)"
+              placeholderTextColor="#9CA3AF"
+              multiline
+              style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 14, fontSize: 14, color: '#111827', minHeight: 80, textAlignVertical: 'top', marginBottom: 20 }}
+            />
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => { setRatingTarget(null); setRatingScore(0); setRatingComment('') }}
+                style={{ flex: 1, paddingVertical: 16, borderRadius: 16, alignItems: 'center', backgroundColor: '#F3F4F6' }}
+              >
+                <Text style={{ fontWeight: '700', color: '#6B7280' }}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={submitRating}
+                disabled={ratingScore === 0 || ratingSubmitting}
+                style={{ flex: 1, paddingVertical: 16, borderRadius: 16, alignItems: 'center', backgroundColor: ratingScore > 0 ? accentColor : '#D1D5DB' }}
+              >
+                {ratingSubmitting
+                  ? <ActivityIndicator color="white" />
+                  : <Text style={{ fontWeight: '700', color: 'white' }}>Kirim Nilai</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <ConfirmModal
         visible={!!sudahTerimaConfirm}
         title="Barang Diterima?"
@@ -213,7 +317,14 @@ export default function StatusScreen() {
         confirmLabel="Diterima"
         confirmColor={Colors.orange}
         onCancel={() => setSudahTerimaConfirm(null)}
-        onConfirm={() => { if (sudahTerimaConfirm) updateStatus(sudahTerimaConfirm, 'completed'); setSudahTerimaConfirm(null) }}
+        onConfirm={async () => {
+          if (sudahTerimaConfirm) {
+            await updateStatus(sudahTerimaConfirm, 'completed')
+            const r = requests.find(req => req.id === sudahTerimaConfirm)
+            if (r) notify(r.donor_id, 'Donasi Diterima!', `"${(r as any).donation?.title ?? 'Donasi'}" telah diterima dengan baik.`, 'received', sudahTerimaConfirm)
+          }
+          setSudahTerimaConfirm(null)
+        }}
       />
     </>
   )

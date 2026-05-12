@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ArrowLeft, MapPin, Clock, AlertCircle, MessageCircle, Heart, Share2, X, ChevronRight } from 'lucide-react-native'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { notify } from '@/lib/notifications'
 import { Colors } from '@/constants/colors'
 import { DonationDetail } from '@/types'
 import { getRelativeTime } from '@/lib/utils'
@@ -129,6 +130,7 @@ export default function DonationDetailScreen() {
       })
       if (error) throw error
 
+      notify(item.donor_id, 'Permintaan Donasi Masuk', `Organisasi meminta donasimu: "${item.title}"`, 'request_in')
       setShowPicker(false)
       Alert.alert('Berhasil!', 'Permintaanmu telah dikirim ke donatur. Tunggu konfirmasi mereka.')
     } catch (e) {

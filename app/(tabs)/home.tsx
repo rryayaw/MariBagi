@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useNeeds } from '@/hooks/useNeeds'
 import { useDonations } from '@/hooks/useDonations'
 import { useCategories } from '@/hooks/useCategories'
+import { useUnreadCount } from '@/hooks/useUnreadCount'
 import { Colors } from '@/constants/colors'
 import { NeedCard } from '@/components/NeedCard'
 import { DonationCard } from '@/components/DonationCard'
@@ -21,6 +22,7 @@ export default function HomeScreen() {
   const [search, setSearch] = useState('')
 
   const isOrg = role === 'organization'
+  const unreadCount = useUnreadCount()
 
   const { needs, loading: needsLoading } = useNeeds(selectedCategory)
   const { donations, loading: donationsLoading } = useDonations(selectedCategory)
@@ -52,10 +54,16 @@ export default function HomeScreen() {
             <Text className="text-2xl font-extrabold text-text-dark">{fullName}</Text>
           </View>
           <TouchableOpacity
+            onPress={() => router.push('/notifications')}
             className="w-10 h-10 rounded-full bg-white items-center justify-center"
             style={{ shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}
           >
             <Bell size={18} color={Colors.textDark} />
+            {unreadCount > 0 && (
+              <View style={{ position: 'absolute', top: -2, right: -2, backgroundColor: '#EF4444', borderRadius: 99, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 }}>
+                <Text style={{ color: 'white', fontSize: 9, fontWeight: '700' }}>{unreadCount > 99 ? '99+' : String(unreadCount)}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 

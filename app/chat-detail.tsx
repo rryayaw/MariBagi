@@ -13,6 +13,7 @@ import * as ImagePicker from 'expo-image-picker'
 import * as DocumentPicker from 'expo-document-picker'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { notify } from '@/lib/notifications'
 import { Colors } from '@/constants/colors'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
@@ -188,7 +189,17 @@ export default function ChatDetailScreen() {
       text: trimmed,
       message_type: 'text',
     })
-    if (error) { setText(trimmed); Alert.alert('Gagal kirim', error.message) }
+    if (error) {
+      setText(trimmed)
+      Alert.alert('Gagal kirim', error.message)
+    } else {
+      const recipientId = isDonor ? conversation?.org_id : conversation?.donor_id
+      if (recipientId) {
+        const preview = trimmed.length > 60 ? trimmed.slice(0, 57) + '...' : trimmed
+        const senderName = isDonor ? conversation?.donor?.full_name : conversation?.org?.full_name
+        notify(recipientId, senderName ?? 'Pesan Baru', preview, 'message', id)
+      }
+    }
     setSending(false)
   }
 
