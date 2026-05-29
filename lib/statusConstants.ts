@@ -42,18 +42,21 @@ export const NEED_STATUS_COLOR: Record<string, string> = {
 export const REQUEST_STATUS_LABEL: Record<string, string> = {
   available: 'Menunggu',
   reserved: 'Disetujui',
+  shipping: 'Pengiriman',
   completed: 'Selesai',
   cancelled: 'Dibatalkan',
 }
 export const REQUEST_STATUS_BG: Record<string, string> = {
   available: '#FEF3C7',
   reserved: '#EFF6FF',
+  shipping: '#F0FDF4',
   completed: '#D1FAE5',
   cancelled: '#F3F4F6',
 }
 export const REQUEST_STATUS_COLOR: Record<string, string> = {
   available: '#F59E0B',
   reserved: '#3B82F6',
+  shipping: '#16A34A',
   completed: '#10B981',
   cancelled: '#9CA3AF',
 }

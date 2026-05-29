@@ -19,13 +19,15 @@ export function usePendingRequests() {
       .eq('status', 'available')
       .eq('initiated', initiatedBy)
 
-    // Reserved requests where this user needs to take the next action:
-    // donor → needs to mark as shipped; org → needs to mark as received
+    // Requests where this user needs to take the next action:
+    // donor → 'reserved' means they need to mark as shipped
+    // org → 'shipping' means they need to confirm receipt
+    const actionableStatus = isOrg ? 'shipping' : 'reserved'
     const { count: actionable } = await supabase
       .from('requests')
       .select('id', { count: 'exact', head: true })
       .eq(col, userId)
-      .eq('status', 'reserved')
+      .eq('status', actionableStatus)
 
     setCount((incoming ?? 0) + (actionable ?? 0))
   }

@@ -16,6 +16,8 @@ type Conversation = {
   created_at: string
   donor: { full_name: string; prof_pic: string } | null
   org: { full_name: string; prof_pic: string } | null
+  lastText?: string | null
+  hasUnread?: boolean
 }
 
 export default function ChatScreen() {
@@ -31,12 +33,44 @@ export default function ChatScreen() {
   const fetchConversations = useCallback(async () => {
     if (!user) return
     const col = isDonor ? 'donor_id' : 'org_id'
-    const { data } = await supabase
+    const { data: convData } = await supabase
       .from('conversations')
       .select('*, donor:donor_id(full_name, prof_pic), org:org_id(full_name, prof_pic)')
       .eq(col, user.id)
       .order('last_message_at', { ascending: false })
-    setConversations((data ?? []) as unknown as Conversation[])
+
+    const convs = (convData ?? []) as unknown as Conversation[]
+    if (convs.length === 0) { setConversations([]); return }
+
+    const ids = convs.map(c => c.id)
+    const { data: msgData } = await supabase
+      .from('messages')
+      .select('conversation_id, text, message_type, is_read, sender_id')
+      .in('conversation_id', ids)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+
+    const lastTextMap = new Map<string, string | null>()
+    const unreadMap = new Map<string, boolean>()
+
+    for (const m of msgData ?? []) {
+      if (!lastTextMap.has(m.conversation_id)) {
+        lastTextMap.set(m.conversation_id,
+          m.message_type === 'text' ? m.text :
+          m.message_type === 'image' ? '📷 Foto' :
+          m.message_type === 'video' ? '🎥 Video' : '📎 File'
+        )
+      }
+      if (!m.is_read && m.sender_id !== user.id) {
+        unreadMap.set(m.conversation_id, true)
+      }
+    }
+
+    setConversations(convs.map(c => ({
+      ...c,
+      lastText: lastTextMap.get(c.id) ?? null,
+      hasUnread: unreadMap.get(c.id) ?? false,
+    })))
   }, [user, isDonor])
 
   useEffect(() => {
@@ -46,6 +80,8 @@ export default function ChatScreen() {
     const channel = supabase
       .channel('conversations-list')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, fetchConversations)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchConversations)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, fetchConversations)
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
@@ -94,21 +130,26 @@ export default function ChatScreen() {
                   shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
                 }}
               >
-                <View style={{ width: 52, height: 52, borderRadius: 26, overflow: 'hidden', flexShrink: 0 }}>
-                  {other?.prof_pic ? (
-                    <Image source={{ uri: other.prof_pic }} style={{ width: 52, height: 52 }} resizeMode="cover" />
-                  ) : (
-                    <View style={{ width: 52, height: 52, backgroundColor: isDonor ? Colors.orgBg : Colors.donorBg, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ fontSize: 22 }}>{isDonor ? '🏢' : '👤'}</Text>
-                    </View>
+                <View style={{ position: 'relative', flexShrink: 0 }}>
+                  <View style={{ width: 52, height: 52, borderRadius: 26, overflow: 'hidden' }}>
+                    {other?.prof_pic ? (
+                      <Image source={{ uri: other.prof_pic }} style={{ width: 52, height: 52 }} resizeMode="cover" />
+                    ) : (
+                      <View style={{ width: 52, height: 52, backgroundColor: isDonor ? Colors.orgBg : Colors.donorBg, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 22 }}>{isDonor ? '🏢' : '👤'}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {c.hasUnread && (
+                    <View style={{ position: 'absolute', top: 0, right: 0, width: 14, height: 14, borderRadius: 7, backgroundColor: '#EF4444', borderWidth: 2, borderColor: 'white' }} />
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: '700', fontSize: 15, color: Colors.textDark }} numberOfLines={1}>
+                  <Text style={{ fontWeight: c.hasUnread ? '800' : '700', fontSize: 15, color: Colors.textDark }} numberOfLines={1}>
                     {other?.full_name ?? '—'}
                   </Text>
-                  <Text style={{ fontSize: 12, color: Colors.textMuted, marginTop: 2 }}>
-                    {c.last_message_at ? formatDate(c.last_message_at) : 'Belum ada pesan'}
+                  <Text style={{ fontSize: 12, color: c.hasUnread ? Colors.textDark : Colors.textMuted, fontWeight: c.hasUnread ? '600' : '400', marginTop: 2 }} numberOfLines={1}>
+                    {c.lastText ?? (c.last_message_at ? formatDate(c.last_message_at) : 'Belum ada pesan')}
                   </Text>
                 </View>
               </TouchableOpacity>

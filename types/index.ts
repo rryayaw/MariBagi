@@ -88,7 +88,7 @@ export interface Request {
   donor_id: string
   org_id: string
   initiated: 'org' | 'donor'
-  status: 'available' | 'reserved' | 'completed' | 'cancelled'
+  status: 'available' | 'reserved' | 'shipping' | 'completed' | 'cancelled'
   offer_title: string | null
   offer_description: string | null
   created_at: string

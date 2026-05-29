@@ -41,8 +41,13 @@ export const NeedCard = ({ item, onPress }: { item: Need; onPress?: () => void }
       </View>
     )}
     <View className="flex-1 p-3 justify-between">
-      <View className="flex-row items-center justify-between mb-1">
+      <View className="flex-row items-center gap-2 mb-1">
         <UrgencyBadge urgency={item.urgency} />
+        {item.status === 'partially_fulfilled' && (
+          <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEF3C7' }}>
+            <Text className="text-xs font-semibold" style={{ color: '#D97706' }}>Sebagian</Text>
+          </View>
+        )}
       </View>
       <Text className="text-base font-bold text-text-dark" numberOfLines={1}>
         {item.title}

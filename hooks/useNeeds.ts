@@ -29,7 +29,7 @@ export const useNeeds = (categoryId?: string) => {
           category:categories (id, name),
           org:orgs (id, full_name, prof_pic, latitude, longitude, address)
         `)
-        .eq('status', 'open')
+        .in('status', ['open', 'partially_fulfilled'])
         .order('created_at', { ascending: false })
 
       if (categoryId) {

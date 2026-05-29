@@ -28,7 +28,7 @@ export default function StatusScreen() {
   const [tolakConfirm, setTolakConfirm] = useState<string | null>(null)
   const [terimaConfirm, setTerimaConfirm] = useState<string | null>(null)
   const [sudahKirimConfirm, setSudahKirimConfirm] = useState<string | null>(null)
-  const [sudahTerimaConfirm, setSudahTerimaConfirm] = useState<string | null>(null)
+  const [fulfillmentModal, setFulfillmentModal] = useState<{ requestId: string; needId: string } | null>(null)
 
   const [ratedIds, setRatedIds] = useState<Set<string>>(new Set())
   const [ratingTarget, setRatingTarget] = useState<Request | null>(null)
@@ -103,6 +103,16 @@ export default function StatusScreen() {
     setRatingScore(0)
     setRatingComment('')
     Alert.alert('Terima Kasih!', 'Penilaianmu telah dikirim.')
+  }
+
+  const handleSudahTerima = async (needStatus: 'fulfilled' | 'partially_fulfilled') => {
+    if (!fulfillmentModal) return
+    const { requestId, needId } = fulfillmentModal
+    setFulfillmentModal(null)
+    await updateStatus(requestId, 'completed')
+    if (needId) await supabase.from('needs').update({ status: needStatus }).eq('id', needId)
+    const r = requests.find(req => req.id === requestId)
+    if (r) notify(r.donor_id, 'Donasi Diterima!', `"${(r as any).donation?.title ?? 'Donasi'}" telah diterima dengan baik.`, 'received', requestId)
   }
 
   const handleHubungi = async (donorId: string, orgId: string) => {
@@ -196,7 +206,7 @@ export default function StatusScreen() {
                 onTerima={() => setTerimaConfirm(r.id)}
                 onCancel={() => setCancelConfirm(r.id)}
                 onSudahKirim={() => setSudahKirimConfirm(r.id)}
-                onSudahTerima={() => setSudahTerimaConfirm(r.id)}
+                onSudahTerima={() => setFulfillmentModal({ requestId: r.id, needId: r.need_id })}
                 onHubungi={() => handleHubungi(r.donor_id, r.org_id)}
                 onBeriNilai={() => { setRatingTarget(r); setRatingScore(0); setRatingComment('') }}
                 hasRated={ratedIds.has(r.id)}
@@ -256,7 +266,7 @@ export default function StatusScreen() {
         onCancel={() => setSudahKirimConfirm(null)}
         onConfirm={async () => {
           if (sudahKirimConfirm) {
-            await updateStatus(sudahKirimConfirm, 'completed')
+            await updateStatus(sudahKirimConfirm, 'shipping')
             const r = requests.find(req => req.id === sudahKirimConfirm)
             if (r) notify(r.org_id, 'Barang Dalam Perjalanan', `Donatur sedang mengirimkan "${(r as any).donation?.title ?? 'donasi'}".`, 'shipped', sudahKirimConfirm)
           }
@@ -310,22 +320,37 @@ export default function StatusScreen() {
         </View>
       </Modal>
 
-      <ConfirmModal
-        visible={!!sudahTerimaConfirm}
-        title="Barang Diterima?"
-        message="Konfirmasi bahwa kamu sudah menerima barang donasi ini."
-        confirmLabel="Diterima"
-        confirmColor={Colors.orange}
-        onCancel={() => setSudahTerimaConfirm(null)}
-        onConfirm={async () => {
-          if (sudahTerimaConfirm) {
-            await updateStatus(sudahTerimaConfirm, 'completed')
-            const r = requests.find(req => req.id === sudahTerimaConfirm)
-            if (r) notify(r.donor_id, 'Donasi Diterima!', `"${(r as any).donation?.title ?? 'Donasi'}" telah diterima dengan baik.`, 'received', sudahTerimaConfirm)
-          }
-          setSudahTerimaConfirm(null)
-        }}
-      />
+      <Modal visible={!!fulfillmentModal} animationType="fade" transparent onRequestClose={() => setFulfillmentModal(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+          <View style={{ backgroundColor: 'white', borderRadius: 24, padding: 24, width: '100%' }}>
+            <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.textDark, marginBottom: 8 }}>Barang Diterima?</Text>
+            <Text style={{ fontSize: 14, color: Colors.textMuted, lineHeight: 20, marginBottom: 24 }}>
+              Apakah kebutuhan ini sudah terpenuhi sepenuhnya?
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => handleSudahTerima('fulfilled')}
+              style={{ paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#D1FAE5', marginBottom: 10 }}
+            >
+              <Text style={{ fontWeight: '700', color: '#059669' }}>Terpenuhi Penuh</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => handleSudahTerima('partially_fulfilled')}
+              style={{ paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#FEF3C7', marginBottom: 10 }}
+            >
+              <Text style={{ fontWeight: '700', color: '#D97706' }}>Sebagian Terpenuhi</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setFulfillmentModal(null)}
+              style={{ paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#F3F4F6' }}
+            >
+              <Text style={{ fontWeight: '700', color: Colors.textMuted }}>Batal</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </>
   )
 }

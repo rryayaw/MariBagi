@@ -56,6 +56,25 @@ export default function ProfileScreen() {
             orgs: orgCount ?? 0,
             rating: data.avg_rating ?? 0,
           })
+        } else {
+          const { count: needCount } = await supabase
+            .from('needs')
+            .select('*', { count: 'exact', head: true })
+            .eq('org_id', user?.id)
+
+          const { data: donorRows } = await supabase
+            .from('requests')
+            .select('donor_id')
+            .eq('org_id', user?.id)
+            .eq('status', 'completed')
+
+          const uniqueDonors = new Set((donorRows ?? []).map((d: any) => d.donor_id)).size
+
+          setStats({
+            donations: needCount ?? 0,
+            orgs: uniqueDonors,
+            rating: data.avg_rating ?? 0,
+          })
         }
       }
     } finally {
@@ -137,11 +156,18 @@ export default function ProfileScreen() {
           className="rounded-2xl p-5 flex-row justify-around -mt-36 mb-3 bg-white/30"
           style={{ shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, elevation: 4 }}
         >
-          {[
-            { emoji: '📦', value: stats.donations, label: 'Donasi' },
-            { emoji: '🏠', value: stats.orgs, label: 'Organisasi' },
-            { emoji: '⭐', value: stats.rating > 0 ? stats.rating.toFixed(1) : '—', label: 'Rating' },
-          ].map((s, i) => (
+          {(isDonor
+            ? [
+                { emoji: '📦', value: stats.donations, label: 'Donasi' },
+                { emoji: '🏠', value: stats.orgs, label: 'Organisasi' },
+                { emoji: '⭐', value: stats.rating > 0 ? stats.rating.toFixed(1) : '—', label: 'Rating' },
+              ]
+            : [
+                { emoji: '📋', value: stats.donations, label: 'Kebutuhan' },
+                { emoji: '👤', value: stats.orgs, label: 'Donatur' },
+                { emoji: '⭐', value: stats.rating > 0 ? stats.rating.toFixed(1) : '—', label: 'Rating' },
+              ]
+          ).map((s, i) => (
             <View key={i} className="items-center flex-1">
               <Text className="text-2xl mb-1">{s.emoji}</Text>
               <Text className="text-xl font-extrabold text-white">{s.value}</Text>
@@ -160,22 +186,43 @@ export default function ProfileScreen() {
           </View>
           <View className="flex-1">
             {hasActivity ? (
-              <>
-                <Text className="text-sm font-bold text-text-dark">Dampak Donasimu</Text>
-                <Text className="text-xs text-text-muted mt-0.5">
-                  Telah membantu melalui{' '}
-                  <Text className="font-bold" style={{ color: primaryColor }}>{stats.donations} donasi</Text>
-                  {' '}ke{' '}
-                  <Text className="font-bold" style={{ color: primaryColor }}>{stats.orgs} organisasi</Text>
-                </Text>
-              </>
+              isDonor ? (
+                <>
+                  <Text className="text-sm font-bold text-text-dark">Dampak Donasimu</Text>
+                  <Text className="text-xs text-text-muted mt-0.5">
+                    Telah membantu melalui{' '}
+                    <Text className="font-bold" style={{ color: primaryColor }}>{stats.donations} donasi</Text>
+                    {' '}ke{' '}
+                    <Text className="font-bold" style={{ color: primaryColor }}>{stats.orgs} organisasi</Text>
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text className="text-sm font-bold text-text-dark">Dampak Komunitasmu</Text>
+                  <Text className="text-xs text-text-muted mt-0.5">
+                    Menerima bantuan dari{' '}
+                    <Text className="font-bold" style={{ color: primaryColor }}>{stats.orgs} donatur</Text>
+                    {' '}untuk{' '}
+                    <Text className="font-bold" style={{ color: primaryColor }}>{stats.donations} kebutuhan</Text>
+                  </Text>
+                </>
+              )
             ) : (
-              <>
-                <Text className="text-sm font-bold text-text-dark">Mulai Berdonasi!</Text>
-                <Text className="text-xs text-text-muted mt-0.5">
-                  Donasikan barang layak pakaimu dan bantu yang membutuhkan.
-                </Text>
-              </>
+              isDonor ? (
+                <>
+                  <Text className="text-sm font-bold text-text-dark">Mulai Berdonasi!</Text>
+                  <Text className="text-xs text-text-muted mt-0.5">
+                    Donasikan barang layak pakaimu dan bantu yang membutuhkan.
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text className="text-sm font-bold text-text-dark">Mulai Posting Kebutuhan!</Text>
+                  <Text className="text-xs text-text-muted mt-0.5">
+                    Buat kebutuhan dan dapatkan bantuan dari donatur.
+                  </Text>
+                </>
+              )
             )}
           </View>
         </View>

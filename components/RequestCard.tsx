@@ -15,6 +15,7 @@ const STEPS = [
 function getStepIndex(status: string) {
   if (status === 'available') return 0
   if (status === 'reserved') return 1
+  if (status === 'shipping') return 2
   if (status === 'completed') return 3
   return -1
 }
@@ -107,10 +108,11 @@ export function RequestCard({ r, isOrg, accentColor, onPress, onTolak, onTerima,
           <Text style={{ fontSize: 11, color: Colors.textLight }} numberOfLines={1}>{subLabel}</Text>
         </View>
 
-        <View style={{ backgroundColor: REQUEST_STATUS_BG[r.status], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+        <View style={{ backgroundColor: REQUEST_STATUS_BG[r.status] ?? '#F3F4F6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 99, flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 0 }}>
           {r.status === 'available' && <Clock size={10} color={REQUEST_STATUS_COLOR[r.status]} />}
+          {r.status === 'shipping' && <Truck size={10} color={REQUEST_STATUS_COLOR[r.status]} />}
           {(r.status === 'reserved' || r.status === 'completed') && <CheckCircle size={10} color={REQUEST_STATUS_COLOR[r.status]} />}
-          <Text style={{ fontSize: 11, fontWeight: '700', color: REQUEST_STATUS_COLOR[r.status] }}>{REQUEST_STATUS_LABEL[r.status]}</Text>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: REQUEST_STATUS_COLOR[r.status] ?? '#9CA3AF' }}>{REQUEST_STATUS_LABEL[r.status] ?? r.status}</Text>
         </View>
       </View>
 
@@ -140,15 +142,16 @@ export function RequestCard({ r, isOrg, accentColor, onPress, onTolak, onTerima,
             </TouchableOpacity>
           )}
 
-          {r.status === 'reserved' && (
+          {(r.status === 'reserved' || r.status === 'shipping') && (
             <>
-              {isOrg ? (
-                <TouchableOpacity activeOpacity={0.8} onPress={onSudahTerima} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: Colors.orgBg, borderWidth: 1, borderColor: Colors.orange }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.orange }}>Diterima</Text>
-                </TouchableOpacity>
-              ) : (
+              {r.status === 'reserved' && !isOrg && (
                 <TouchableOpacity activeOpacity={0.8} onPress={onSudahKirim} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: Colors.donorBg, borderWidth: 1, borderColor: Colors.primary }}>
                   <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.primary }}>Sudah Dikirim</Text>
+                </TouchableOpacity>
+              )}
+              {r.status === 'shipping' && isOrg && (
+                <TouchableOpacity activeOpacity={0.8} onPress={onSudahTerima} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: Colors.orgBg, borderWidth: 1, borderColor: Colors.orange }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.orange }}>Sudah Terima</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity activeOpacity={0.8} onPress={onHubungi} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center', gap: 4 }}>

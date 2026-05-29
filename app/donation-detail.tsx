@@ -35,7 +35,7 @@ export default function DonationDetailScreen() {
   const [myNeeds, setMyNeeds] = useState<MyNeed[]>([])
   const [pickerLoading, setPickerLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [myRequestStatus, setMyRequestStatus] = useState<'available' | 'reserved' | null>(null)
+  const [myRequestStatus, setMyRequestStatus] = useState<'available' | 'reserved' | 'shipping' | 'completed' | null>(null)
   const [myRequestId, setMyRequestId] = useState<string | null>(null)
   const [cancelConfirm, setCancelConfirm] = useState(false)
   const [mismatchTarget, setMismatchTarget] = useState<MyNeed | null>(null)
@@ -77,7 +77,7 @@ export default function DonationDetailScreen() {
           .limit(1)
           .maybeSingle()
         if (req) {
-          setMyRequestStatus(req.status as 'available' | 'reserved')
+          setMyRequestStatus(req.status as 'available' | 'reserved' | 'shipping' | 'completed')
           setMyRequestId(req.id)
         }
       }
@@ -260,9 +260,13 @@ export default function DonationDetailScreen() {
               <Text className="text-white font-bold text-base">Kelola Post</Text>
             </TouchableOpacity>
           ) : isOrg ? (
-            item.status === 'reserved' || item.status === 'completed' ? (
-              <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: '#F3F4F6' }}>
-                <Text className="text-base font-bold text-text-muted">Sudah Dipesan</Text>
+            myRequestStatus === 'completed' ? (
+              <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: '#D1FAE5' }}>
+                <Text className="text-base font-bold" style={{ color: '#059669' }}>Permintaan Selesai ✓</Text>
+              </View>
+            ) : myRequestStatus === 'shipping' ? (
+              <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: '#F0FDF4' }}>
+                <Text className="text-base font-bold" style={{ color: '#16A34A' }}>Barang Sedang Dikirim...</Text>
               </View>
             ) : myRequestStatus === 'reserved' ? (
               <View style={{ gap: 10 }}>
@@ -279,19 +283,22 @@ export default function DonationDetailScreen() {
                 </TouchableOpacity>
               </View>
             ) : myRequestStatus === 'available' ? (
-              <View>
-                <View className="rounded-2xl py-4 items-center mb-3" style={{ backgroundColor: '#FEF3C7' }}>
+              <View style={{ gap: 10 }}>
+                <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: '#FEF3C7' }}>
                   <Text className="text-base font-bold" style={{ color: '#D97706' }}>Menunggu Konfirmasi...</Text>
                 </View>
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  className="flex-row items-center justify-center gap-2 border-2 rounded-2xl py-3"
-                  style={{ borderColor: Colors.textMuted }}
-                  onPress={() => Alert.alert('Info', 'Fitur chat belum tersedia')}
+                  onPress={() => setCancelConfirm(true)}
+                  className="rounded-2xl py-3 items-center"
+                  style={{ backgroundColor: '#FEE2E2' }}
                 >
-                  <MessageCircle size={16} color={Colors.textMuted} />
-                  <Text className="text-sm font-bold text-text-muted">Hubungi Donatur</Text>
+                  <Text className="text-sm font-bold" style={{ color: '#DC2626' }}>Batalkan Permintaan</Text>
                 </TouchableOpacity>
+              </View>
+            ) : item.status === 'reserved' || item.status === 'completed' ? (
+              <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: '#F3F4F6' }}>
+                <Text className="text-base font-bold text-text-muted">Sudah Dipesan</Text>
               </View>
             ) : (
               <View className="flex-row gap-3">
