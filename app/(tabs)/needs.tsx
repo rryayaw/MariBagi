@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   View, Text, TouchableOpacity,
-  ScrollView, ActivityIndicator, Alert
+  ScrollView, ActivityIndicator
 } from 'react-native'
 import { FileText, Type } from 'lucide-react-native'
 import { OptionCard } from '@/components/OptionCard'
@@ -12,6 +12,7 @@ import { Colors } from '@/constants/colors'
 import { useRouter } from 'expo-router'
 import { InputField } from '@/components/InputField'
 import { MyNeedsTab } from '@/components/MyNeedsTab'
+import { SuccessModal } from '@/components/SuccessModal'
 
 type Urgency = 'normal' | 'urgent'
 type ActiveTab = 'create' | 'my'
@@ -29,6 +30,7 @@ export default function PostNeedScreen() {
   const [urgency, setUrgency] = useState<Urgency>('normal')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const handleSubmit = async () => {
     if (!title.trim()) return setError('Judul tidak boleh kosong.')
@@ -54,9 +56,7 @@ export default function PostNeedScreen() {
     setCategoryId(null)
     setUrgency('normal')
 
-    Alert.alert('Berhasil!', 'Kebutuhan kamu telah dipublikasikan.', [
-      { text: 'OK', onPress: () => router.push('/(tabs)/home') }
-    ])
+    setShowSuccess(true)
   }
 
   return (
@@ -177,6 +177,15 @@ export default function PostNeedScreen() {
       </View>
       </ScrollView>
       )}
+
+      <SuccessModal
+        visible={showSuccess}
+        title="Kebutuhan Terkirim!"
+        message="Kebutuhan kamu berhasil dipublikasikan dan kini bisa dilihat oleh donatur di sekitarmu."
+        accentColor={Colors.orange}
+        haloColor={Colors.orgBg}
+        onClose={() => { setShowSuccess(false); router.push('/(tabs)/home') }}
+      />
 
     </View>
   )

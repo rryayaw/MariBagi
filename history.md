@@ -2,6 +2,9 @@
 
 ## May 2026
 
+### 2026-05-29
+- **[pending]()** fix: shipping status flow, org cancel, chat previews, fulfillment modal, and org profile stats
+
 ### 2026-05-12
 - **[f8068f5](../../commit/f8068f5)** feat: add tab badges, category mismatch warnings, and no-internet screen
 - **[7799e41](../../commit/7799e41)** feat: add in-app notification system, ratings, and wire status actions

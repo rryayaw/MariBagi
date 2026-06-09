@@ -22,6 +22,7 @@ export default function OnboardingScreen() {
   const [profilePic, setProfilePic] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [locating, setLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handlePickImage = async () => {
@@ -38,17 +39,25 @@ export default function OnboardingScreen() {
 
   // Get current location
   const handleGetLocation = async () => {
+    if (locating) return
     const { status } = await Location.requestForegroundPermissionsAsync()
-    if (status !== 'granted') return Alert.alert('Permission needed', 'Allow access to your location.')
+    if (status !== 'granted') return Alert.alert('Izin diperlukan', 'Izinkan akses ke lokasimu.')
 
-    const location = await Location.getCurrentPositionAsync({})
-    setLatitude(location.coords.latitude)
-    setLongitude(location.coords.longitude)
+    setLocating(true)
+    try {
+      const location = await Location.getCurrentPositionAsync({})
+      setLatitude(location.coords.latitude)
+      setLongitude(location.coords.longitude)
 
-    const geocode = await Location.reverseGeocodeAsync(location.coords)
-    if (geocode.length > 0) {
-      const g = geocode[0]
-      setAddress(`${g.street ?? ''}, ${g.district ?? ''}, ${g.city ?? ''}`.trim())
+      const geocode = await Location.reverseGeocodeAsync(location.coords)
+      if (geocode.length > 0) {
+        const g = geocode[0]
+        setAddress(`${g.street ?? ''}, ${g.district ?? ''}, ${g.city ?? ''}`.trim())
+      }
+    } catch {
+      Alert.alert('Gagal', 'Tidak dapat mengambil lokasi. Coba lagi.')
+    } finally {
+      setLocating(false)
     }
   }
 
@@ -160,12 +169,21 @@ export default function OnboardingScreen() {
         {/* Get location button */}
         <TouchableOpacity
           onPress={handleGetLocation}
+          disabled={locating}
           className="flex-row items-center gap-2 mb-8 self-start"
           activeOpacity={0.7}
         >
-          <Navigation size={14} color={accentColor} />
+          {locating ? (
+            <ActivityIndicator size="small" color={accentColor} />
+          ) : (
+            <Navigation size={14} color={accentColor} />
+          )}
           <Text className="text-xs font-semibold" style={{ color: accentColor }}>
-            {latitude ? `Lokasi tersimpan (${latitude.toFixed(4)}, ${longitude?.toFixed(4)})` : 'Gunakan lokasi saat ini'}
+            {locating
+              ? 'Mengambil lokasi...'
+              : latitude
+                ? `Lokasi tersimpan (${latitude.toFixed(4)}, ${longitude?.toFixed(4)})`
+                : 'Gunakan lokasi saat ini'}
           </Text>
         </TouchableOpacity>
 

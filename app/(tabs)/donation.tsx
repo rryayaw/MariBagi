@@ -14,6 +14,7 @@ import { Colors } from '@/constants/colors'
 import { useRouter } from 'expo-router'
 import { InputField } from '@/components/InputField'
 import { MyDonationsTab } from '@/components/MyDonationsTab'
+import { SuccessModal } from '@/components/SuccessModal'
 
 type PickupMethod = 'pickup' | 'dropoff'
 type ActiveTab = 'create' | 'my'
@@ -33,6 +34,7 @@ export default function PostDonationScreen() {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -68,9 +70,7 @@ export default function PostDonationScreen() {
     setCategoryId(null)
     setPhotoUrl(null)
     setPickupMethod('pickup')
-    Alert.alert('Berhasil!', 'Donasi kamu telah dipublikasikan.', [
-      { text: 'OK', onPress: () => router.push('/(tabs)/home') }
-    ])
+    setShowSuccess(true)
   }
 
   return (
@@ -202,6 +202,15 @@ export default function PostDonationScreen() {
           </View>
         </ScrollView>
       )}
+
+      <SuccessModal
+        visible={showSuccess}
+        title="Donasi Terkirim!"
+        message="Donasi kamu berhasil dipublikasikan dan kini bisa dilihat oleh organisasi di sekitarmu."
+        accentColor={Colors.primary}
+        haloColor={Colors.donorBg}
+        onClose={() => { setShowSuccess(false); router.push('/(tabs)/home') }}
+      />
 
     </View>
   )

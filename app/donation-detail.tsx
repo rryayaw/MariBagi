@@ -34,7 +34,8 @@ export default function DonationDetailScreen() {
   const [showPicker, setShowPicker] = useState(false)
   const [myNeeds, setMyNeeds] = useState<MyNeed[]>([])
   const [pickerLoading, setPickerLoading] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [submittingId, setSubmittingId] = useState<string | null>(null)
+  const [chatLoading, setChatLoading] = useState(false)
   const [myRequestStatus, setMyRequestStatus] = useState<'available' | 'reserved' | 'shipping' | 'completed' | null>(null)
   const [myRequestId, setMyRequestId] = useState<string | null>(null)
   const [cancelConfirm, setCancelConfirm] = useState(false)
@@ -106,7 +107,7 @@ export default function DonationDetailScreen() {
 
   const submitRequest = async (needId: string) => {
     if (!user || !item) return
-    setSubmitting(true)
+    setSubmittingId(needId)
     try {
       const { data: existing } = await supabase
         .from('requests')
@@ -138,7 +139,36 @@ export default function DonationDetailScreen() {
     } catch (e) {
       Alert.alert('Gagal', String(e))
     } finally {
-      setSubmitting(false)
+      setSubmittingId(null)
+    }
+  }
+
+  const handleHubungi = async () => {
+    if (!user || !item || chatLoading) return
+    setChatLoading(true)
+    try {
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('donor_id', item.donor_id)
+        .eq('org_id', user.id)
+        .maybeSingle()
+
+      if (existing) {
+        router.push({ pathname: '/chat-detail', params: { id: existing.id } })
+        return
+      }
+
+      const { data: created, error } = await supabase
+        .from('conversations')
+        .insert({ donor_id: item.donor_id, org_id: user.id })
+        .select('id')
+        .single()
+
+      if (error || !created) { Alert.alert('Gagal membuka chat', String(error)); return }
+      router.push({ pathname: '/chat-detail', params: { id: created.id } })
+    } finally {
+      setChatLoading(false)
     }
   }
 
@@ -256,7 +286,12 @@ export default function DonationDetailScreen() {
 
           {/* Action buttons */}
           {isOwner ? (
-            <TouchableOpacity activeOpacity={0.8} className="rounded-2xl py-4 items-center" style={{ backgroundColor: Colors.primary }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push({ pathname: '/(edit)/edit-donation-post', params: { id: item.id } })}
+              className="rounded-2xl py-4 items-center"
+              style={{ backgroundColor: Colors.primary }}
+            >
               <Text className="text-white font-bold text-base">Kelola Post</Text>
             </TouchableOpacity>
           ) : isOrg ? (
@@ -304,12 +339,19 @@ export default function DonationDetailScreen() {
               <View className="flex-row gap-3">
                 <TouchableOpacity
                   activeOpacity={0.8}
+                  disabled={chatLoading}
                   className="flex-1 flex-row items-center justify-center gap-2 border-2 rounded-2xl py-4"
                   style={{ borderColor: Colors.textMuted }}
-                  onPress={() => Alert.alert('Info', 'Fitur chat belum tersedia')}
+                  onPress={handleHubungi}
                 >
-                  <MessageCircle size={18} color={Colors.textMuted} />
-                  <Text className="text-base font-bold text-text-muted">Chat</Text>
+                  {chatLoading ? (
+                    <ActivityIndicator color={Colors.textMuted} />
+                  ) : (
+                    <>
+                      <MessageCircle size={18} color={Colors.textMuted} />
+                      <Text className="text-base font-bold text-text-muted">Chat</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   activeOpacity={0.8}
@@ -389,7 +431,7 @@ export default function DonationDetailScreen() {
                       key={n.id}
                       activeOpacity={0.8}
                       onPress={() => { if (mismatch) { setShowPicker(false); setMismatchTarget(n) } else { submitRequest(n.id) } }}
-                      disabled={submitting}
+                      disabled={!!submittingId}
                       style={{
                         backgroundColor: mismatch ? '#FFFBEB' : Colors.orgBg,
                         borderRadius: 16,
@@ -415,7 +457,7 @@ export default function DonationDetailScreen() {
                           </View>
                         )}
                       </View>
-                      {submitting ? (
+                      {submittingId === n.id ? (
                         <ActivityIndicator size="small" color={Colors.orange} style={{ marginLeft: 12 }} />
                       ) : (
                         <ChevronRight size={18} color={mismatch ? '#F59E0B' : Colors.orange} style={{ marginLeft: 12 }} />

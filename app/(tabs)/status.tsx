@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity,
   ActivityIndicator, Alert, RefreshControl, Modal, TextInput
 } from 'react-native'
 import { ClipboardList, Star } from 'lucide-react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { notify } from '@/lib/notifications'
@@ -39,6 +39,9 @@ export default function StatusScreen() {
   const isOrg = role === 'organization'
   const accentColor = isOrg ? Colors.orange : Colors.primary
 
+  const hubungiInFlight = useRef(false)
+  const hasLoaded = useRef(false)
+
   const fetchRequests = useCallback(async () => {
     if (!user) return
     try {
@@ -68,10 +71,19 @@ export default function StatusScreen() {
     }
   }, [user, isOrg])
 
-  useEffect(() => {
-    setLoading(true)
-    fetchRequests().finally(() => setLoading(false))
-  }, [fetchRequests])
+  // Re-fetch every time the tab gains focus so the user always sees the latest
+  // requests/status. Only the first load shows the full-screen spinner; later
+  // visits refresh silently in the background to avoid a jarring spinner flash.
+  useFocusEffect(
+    useCallback(() => {
+      if (hasLoaded.current) {
+        fetchRequests()
+      } else {
+        setLoading(true)
+        fetchRequests().finally(() => { setLoading(false); hasLoaded.current = true })
+      }
+    }, [fetchRequests])
+  )
 
   const onRefresh = async () => {
     setRefreshing(true)
@@ -80,8 +92,16 @@ export default function StatusScreen() {
   }
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from('requests').update({ status }).eq('id', id)
-    if (error) { Alert.alert('Gagal', String(error)); return }
+    const { data, error } = await supabase
+      .from('requests')
+      .update({ status })
+      .eq('id', id)
+      .select('id')
+    if (error) { Alert.alert('Gagal', error.message); return }
+    if (!data || data.length === 0) {
+      Alert.alert('Gagal', 'Perubahan status tidak tersimpan. Periksa izin akses atau koneksimu.')
+      return
+    }
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status: status as Request['status'] } : r))
   }
 
@@ -116,26 +136,32 @@ export default function StatusScreen() {
   }
 
   const handleHubungi = async (donorId: string, orgId: string) => {
-    const { data: existing } = await supabase
-      .from('conversations')
-      .select('id')
-      .eq('donor_id', donorId)
-      .eq('org_id', orgId)
-      .maybeSingle()
+    if (hubungiInFlight.current) return
+    hubungiInFlight.current = true
+    try {
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('donor_id', donorId)
+        .eq('org_id', orgId)
+        .maybeSingle()
 
-    if (existing) {
-      router.push({ pathname: '/chat-detail', params: { id: existing.id } })
-      return
+      if (existing) {
+        router.push({ pathname: '/chat-detail', params: { id: existing.id } })
+        return
+      }
+
+      const { data: created, error } = await supabase
+        .from('conversations')
+        .insert({ donor_id: donorId, org_id: orgId })
+        .select('id')
+        .single()
+
+      if (error || !created) { Alert.alert('Gagal membuka chat', String(error)); return }
+      router.push({ pathname: '/chat-detail', params: { id: created.id } })
+    } finally {
+      hubungiInFlight.current = false
     }
-
-    const { data: created, error } = await supabase
-      .from('conversations')
-      .insert({ donor_id: donorId, org_id: orgId })
-      .select('id')
-      .single()
-
-    if (error || !created) { Alert.alert('Gagal membuka chat', String(error)); return }
-    router.push({ pathname: '/chat-detail', params: { id: created.id } })
   }
 
   const isIncoming = (r: Request) => isOrg ? r.initiated === 'donor' : r.initiated === 'org'
@@ -233,12 +259,12 @@ export default function StatusScreen() {
         confirmColor="#DC2626"
         onCancel={() => setTolakConfirm(null)}
         onConfirm={async () => {
-          if (tolakConfirm) {
-            await updateStatus(tolakConfirm, 'cancelled')
-            const r = requests.find(req => req.id === tolakConfirm)
-            if (r) notify(r.donor_id, 'Permintaan Ditolak', `Permintaanmu untuk "${(r as any).donation?.title ?? 'donasi'}" ditolak.`, 'request_rejected', tolakConfirm)
-          }
+          const id = tolakConfirm
           setTolakConfirm(null)
+          if (!id) return
+          await updateStatus(id, 'cancelled')
+          const r = requests.find(req => req.id === id)
+          if (r) notify(r.donor_id, 'Permintaan Ditolak', `Permintaanmu untuk "${(r as any).donation?.title ?? 'donasi'}" ditolak.`, 'request_rejected', id)
         }}
       />
       <ConfirmModal
@@ -249,12 +275,12 @@ export default function StatusScreen() {
         confirmColor="#059669"
         onCancel={() => setTerimaConfirm(null)}
         onConfirm={async () => {
-          if (terimaConfirm) {
-            await updateStatus(terimaConfirm, 'reserved')
-            const r = requests.find(req => req.id === terimaConfirm)
-            if (r) notify(r.donor_id, 'Permintaan Diterima!', `Permintaanmu untuk "${(r as any).donation?.title ?? 'donasi'}" diterima.`, 'request_accepted', terimaConfirm)
-          }
+          const id = terimaConfirm
           setTerimaConfirm(null)
+          if (!id) return
+          await updateStatus(id, 'reserved')
+          const r = requests.find(req => req.id === id)
+          if (r) notify(r.donor_id, 'Permintaan Diterima!', `Permintaanmu untuk "${(r as any).donation?.title ?? 'donasi'}" diterima.`, 'request_accepted', id)
         }}
       />
       <ConfirmModal
@@ -265,12 +291,12 @@ export default function StatusScreen() {
         confirmColor={Colors.primary}
         onCancel={() => setSudahKirimConfirm(null)}
         onConfirm={async () => {
-          if (sudahKirimConfirm) {
-            await updateStatus(sudahKirimConfirm, 'shipping')
-            const r = requests.find(req => req.id === sudahKirimConfirm)
-            if (r) notify(r.org_id, 'Barang Dalam Perjalanan', `Donatur sedang mengirimkan "${(r as any).donation?.title ?? 'donasi'}".`, 'shipped', sudahKirimConfirm)
-          }
+          const id = sudahKirimConfirm
           setSudahKirimConfirm(null)
+          if (!id) return
+          await updateStatus(id, 'shipping')
+          const r = requests.find(req => req.id === id)
+          if (r) notify(r.org_id, 'Barang Dalam Perjalanan', `Donatur sedang mengirimkan "${(r as any).donation?.title ?? 'donasi'}".`, 'shipped', id)
         }}
       />
       <Modal visible={!!ratingTarget} animationType="slide" transparent onRequestClose={() => setRatingTarget(null)}>

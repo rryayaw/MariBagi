@@ -30,6 +30,13 @@
     "plugins": [
       "expo-router",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a3e66e94-82cb-4662-bbc6-6869821b59d4"
+      }
+    },
+    "owner": "ray_margo"
   }
 }

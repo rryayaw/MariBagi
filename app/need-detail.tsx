@@ -34,7 +34,8 @@ export default function NeedDetailScreen() {
   const [showPicker, setShowPicker] = useState(false)
   const [myDonations, setMyDonations] = useState<MyDonation[]>([])
   const [pickerLoading, setPickerLoading] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [submittingId, setSubmittingId] = useState<string | null>(null)
+  const [chatLoading, setChatLoading] = useState(false)
   const [myRequestStatus, setMyRequestStatus] = useState<'available' | 'reserved' | null>(null)
   const [myRequestId, setMyRequestId] = useState<string | null>(null)
   const [cancelConfirm, setCancelConfirm] = useState(false)
@@ -106,7 +107,7 @@ export default function NeedDetailScreen() {
 
   const submitRequest = async (donationId: string) => {
     if (!user || !item) return
-    setSubmitting(true)
+    setSubmittingId(donationId)
     try {
       const { data: existing } = await supabase
         .from('requests')
@@ -138,7 +139,36 @@ export default function NeedDetailScreen() {
     } catch (e) {
       Alert.alert('Gagal', String(e))
     } finally {
-      setSubmitting(false)
+      setSubmittingId(null)
+    }
+  }
+
+  const handleHubungi = async () => {
+    if (!user || !item || chatLoading) return
+    setChatLoading(true)
+    try {
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('donor_id', user.id)
+        .eq('org_id', item.org_id)
+        .maybeSingle()
+
+      if (existing) {
+        router.push({ pathname: '/chat-detail', params: { id: existing.id } })
+        return
+      }
+
+      const { data: created, error } = await supabase
+        .from('conversations')
+        .insert({ donor_id: user.id, org_id: item.org_id })
+        .select('id')
+        .single()
+
+      if (error || !created) { Alert.alert('Gagal membuka chat', String(error)); return }
+      router.push({ pathname: '/chat-detail', params: { id: created.id } })
+    } finally {
+      setChatLoading(false)
     }
   }
 
@@ -289,6 +319,7 @@ export default function NeedDetailScreen() {
           {isOwner ? (
             <TouchableOpacity
               activeOpacity={0.8}
+              onPress={() => router.push({ pathname: '/(edit)/edit-need-post', params: { id: item.id } })}
               className="rounded-2xl py-4 items-center"
               style={{ backgroundColor: Colors.orange }}
             >
@@ -320,24 +351,38 @@ export default function NeedDetailScreen() {
                 </View>
                 <TouchableOpacity
                   activeOpacity={0.8}
+                  disabled={chatLoading}
                   className="flex-row items-center justify-center gap-2 border-2 rounded-2xl py-3"
                   style={{ borderColor: Colors.textMuted }}
-                  onPress={() => Alert.alert('Info', 'Fitur chat belum tersedia')}
+                  onPress={handleHubungi}
                 >
-                  <MessageCircle size={16} color={Colors.textMuted} />
-                  <Text className="text-sm font-bold text-text-muted">Hubungi Organisasi</Text>
+                  {chatLoading ? (
+                    <ActivityIndicator color={Colors.textMuted} />
+                  ) : (
+                    <>
+                      <MessageCircle size={16} color={Colors.textMuted} />
+                      <Text className="text-sm font-bold text-text-muted">Hubungi Organisasi</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             ) : (
               <View className="flex-row gap-3">
                 <TouchableOpacity
                   activeOpacity={0.8}
+                  disabled={chatLoading}
                   className="flex-1 flex-row items-center justify-center gap-2 border-2 rounded-2xl py-4"
                   style={{ borderColor: Colors.textMuted }}
-                  onPress={() => Alert.alert('Info', 'Fitur chat belum tersedia')}
+                  onPress={handleHubungi}
                 >
-                  <MessageCircle size={18} color={Colors.textMuted} />
-                  <Text className="text-base font-bold text-text-muted">Chat</Text>
+                  {chatLoading ? (
+                    <ActivityIndicator color={Colors.textMuted} />
+                  ) : (
+                    <>
+                      <MessageCircle size={18} color={Colors.textMuted} />
+                      <Text className="text-base font-bold text-text-muted">Chat</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   activeOpacity={0.8}
@@ -424,7 +469,7 @@ export default function NeedDetailScreen() {
                       key={d.id}
                       activeOpacity={0.8}
                       onPress={() => { if (mismatch) { setShowPicker(false); setMismatchTarget(d) } else { submitRequest(d.id) } }}
-                      disabled={submitting}
+                      disabled={!!submittingId}
                       style={{
                         backgroundColor: mismatch ? '#FFFBEB' : Colors.donorBg,
                         borderRadius: 16,
@@ -450,7 +495,7 @@ export default function NeedDetailScreen() {
                           </View>
                         )}
                       </View>
-                      {submitting ? (
+                      {submittingId === d.id ? (
                         <ActivityIndicator size="small" color={Colors.primary} style={{ marginLeft: 12 }} />
                       ) : (
                         <ChevronRight size={18} color={mismatch ? '#F59E0B' : Colors.primary} style={{ marginLeft: 12 }} />
